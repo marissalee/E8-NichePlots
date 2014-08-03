@@ -2,10 +2,6 @@
 #files needed: tab-delim files in 'e8DataPackage_080314' folder
 
 #########################################################
-#load functions
-#source('leeFunctions.R')
-
-#########################################################
 #load data
 
 #soil data (sd)
@@ -78,8 +74,8 @@ vars<-c('year','plothalfid','plotid')
 
 #function to make 'plotname' and 'plothalfname'
 MakeNames<-function(data){
-  data$plotname<-paste(data$site,data$rep,sep="_") #make 'plotname'
-  data$plothalfname<-paste(data$site,data$rep,data$inv,sep="_") #make 'plothalfname'  
+  data$plotname<-as.factor(paste(data$site,data$rep,sep="_")) #make 'plotname'
+  data$plothalfname<-as.factor(paste(data$site,data$rep,data$inv,sep="_")) #make 'plothalfname'  
   return(data)
 }
 
@@ -123,7 +119,7 @@ data<-pd
 data_dic<-pd_dic
 vars<-c('plothalfid','plotid')
 data<-MakeFactors(data, vars)
-data$plotname<-paste(data$site,data$rep,sep="_") #make 'plotname'
+data$plotname<-as.factor(paste(data$site,data$rep,sep="_")) #make 'plotname'
 numvars<-dim(data_dic)[2]-1 #number of variables
 n2<-numvars+1
 addvar1<-c('Plot Name','plotname','A3_A1',rep(NA,4),'Pasted character string to identify unique plots',NA)
@@ -135,13 +131,24 @@ p<-data
 p_dic<-data_dic
 
 #plot tree data
+data<-td
+data_dic<-td_dic
+vars<-c('plotid')
+data<-MakeFactors(data, vars)
+data$plotname<-as.factor(paste(data$site,data$rep,sep="_")) #make 'plotname'
+numvars<-dim(data_dic)[2]-1 #number of variables
+n2<-numvars+1
+addvar1<-c('Plot Name','plotname','A3_A1',rep(NA,4),'Pasted character string to identify unique plots',NA)
+data_dic<-cbind(data_dic,addvar1)
+colnames(data_dic)<-c(colnames(data_dic)[1:n2],paste('v',numvars+1, sep=''))
+str(data)
+str(data_dic)
+t<-data
+t_dic<-data_dic
 
 
-
-
-
-#timeline data
-
+#########################################################
+#something else
 
 
 
