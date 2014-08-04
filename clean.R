@@ -148,10 +148,66 @@ t_dic<-data_dic
 
 
 #########################################################
-#something else
+#make a total understory biomass variable in v (veg) and add it to the data directory
+v$total<-v$mv+v$nat
+newmin<-min(v$total)
+newmax<-max(v$total)
+newavg<-mean(v$total)
+data_dic<-v_dic
+numvars<-dim(data_dic)[2]-1;n2<-numvars+1 #number of variables
+
+addvar1<-c('Total understory plant biomass (g)','total','F2.2',
+           'g/.1875m2', round(newmin,2), round(newmax,2), round(newavg,2),
+           'Dry weight (g) of total understory plant biomass that was harvested from 3-0.25mx0.25m quadrats',
+           'Addition of directly measured variables: mv+nat=total')
+data_dic<-cbind(data_dic,addvar1)
+colnames(data_dic)<-c(colnames(data_dic)[1:n2],paste('v',numvars+1, sep=''))
+v_dic<-data_dic
+
+
+#########################################################
+#reshape dataframes into long format: s (soil) and v (veg)
+library(reshape2)
+
+colnames(s)
+sm<-melt(s,id.vars=c('year','plothalfid','plothalfname','plotid','plotname','inv','depth'),
+         measure.vars=c('nhi','noi','toti','ammonifd','nitrifd','minzd','soilmoi','som'))
+
+colnames(v)
+vm<-melt(v,id.vars=c('year','plothalfid','plothalfname','plotid','plotname','inv'),
+         measure.vars=c('mv','nat','litter','total','percpar','soiltemp'))
+
+
+#########################################################
+#export clean and reshaped files
+
+#soil data (sm)
+write.table(sm, "e8DataPackage_080314_clean/e8_plothalfSoilData_clean.txt",sep="\t", row.names=F)
+write.table(s_dic, "e8DataPackage_080314_clean/e8_plothalfSoilData_dictionary_clean.txt",sep="\t", row.names=F)
+
+#veg data (vm)
+write.table(vm, "e8DataPackage_080314_clean/e8_plothalfVegData_clean.txt",sep="\t", row.names=F)
+write.table(v_dic, "e8DataPackage_080314_clean/e8_plothalfVegData_dictionary_clean.txt",sep="\t", row.names=F)
+
+#plot location data (p)
+write.table(p, "e8DataPackage_080314_clean/e8_plotLoc_clean.txt",sep="\t", row.names=F)
+write.table(p_dic, "e8DataPackage_080314_clean/e8_plotLoc_dictionary.txt",sep="\t", row.names=F)
+
+#plot tree data (t)
+write.table(t, "e8DataPackage_080314_clean/e8_plotTrees_clean.txt",sep="\t", row.names=F)
+write.table(t_dic, "e8DataPackage_080314_clean/e8_plotTrees_dictionary_clean.txt",sep="\t", row.names=F)
+
+#timeline data (hd)
+write.table(h, "e8DataPackage_080314_clean/e8_timeline_clean.txt",sep="\t", row.names=F)
 
 
 
 
-data$total<-data$mv+data$nat
+
+
+
+
+
+
+
 
