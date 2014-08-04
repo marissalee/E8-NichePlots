@@ -45,23 +45,22 @@ library(ggplot2)
 str(sv)
 sv$year<-as.factor(sv$year)
 
-p <- ggplot(sv, aes(x = nhi, y = mv, color=year))
-p + geom_point()
+soil_shortname<-c('noi','toti','nitrifd','minzd','soilmoi')
+soil_longname<-c('Nitrate (ug/G) in Reference Plot','Total Inorganic N (ug/G) in Reference Plot','Nitrification (ug/G*d) in Reference Plot','Mineralization (ug/G*d) in Reference Plot','Soil Moisture (%) in Reference Plot')
 
-p <- ggplot(sv, aes(x = noi, y = mv, color=year))
-p + geom_point()
+for (i in 1:length(soil_shortname)){
+  plot(x = sv[,soil_shortname[i]], y = sv$mv,
+       xlab='Microstegium biomass (g)', ylab=soil_longname[i],
+       type='n')
+  points # add for each year
+  line # add if lm has a signif slope
+}
 
-p <- ggplot(sv, aes(x = toti, y = mv, color=year))
-p + geom_point() + geom_smooth(lwd = 1, se = F, method='lm')
+soil_longname[i]
 
-p <- ggplot(sv, aes(x = ammonifd, y = mv, color=year))
-p + geom_point()
 
-p <- ggplot(sv, aes(x = nitrifd, y = mv, color=year))
-p + geom_point()
-
-p <- ggplot(sv, aes(x = minzd, y = mv, color=year))
-p + geom_point()
+i<-1
+sv[,soil_shortname[i]]
 
 
 
