@@ -30,6 +30,9 @@ hd<-read.table("e8DataPackage_080314/e8_timeline.txt",header=TRUE,sep="\t")
 #View(sd) #there are a number of empty columns to the right that need to be chopped off.
 s<-sd[,-grep('X',colnames(sd))]
 #View(s) #looks good
+library(doBy) #for orderBy
+s1<-orderBy(~year+plothalfid+inv+depth, s)
+s<-s1
 #View(sd_dic) #there is one empty column to the right that needs to be chopped off.
 s_dic<-sd_dic[,-grep('X',colnames(sd_dic))]
 #View(s_dic) #looks good
@@ -38,6 +41,8 @@ s_dic<-sd_dic[,-grep('X',colnames(sd_dic))]
 #View(vd) #there are 3 empty rows at the bottom that need to get chopped off.
 v<-vd[!is.na(vd[,1]),]
 #View(v) #looks good
+v1<-orderBy(~year+plothalfid+inv, v)
+v<-v1
 #View(vd_dic) #there are 5 empty columns to the right that need to be chopped off.
 v_dic<-vd_dic[,-grep('X',colnames(vd_dic))]
 #View(v_dic) #looks good
@@ -76,6 +81,8 @@ vars<-c('year','plothalfid','plotid')
 MakeNames<-function(data){
   data$plotname<-as.factor(paste(data$site,data$rep,sep="_")) #make 'plotname'
   data$plothalfname<-as.factor(paste(data$site,data$rep,data$inv,sep="_")) #make 'plothalfname'  
+  data$yrplotname<-as.factor(paste(data$year,data$site,data$rep,sep="_")) #make 'yrplotname'
+  data$yrplothalfname<-as.factor(paste(data$year,data$site,data$rep,data$inv,sep="_")) #make 'yrplothalfname'
   return(data)
 }
 
@@ -85,8 +92,10 @@ AddNames<-function(data_dic){
   n2<-numvars+1
   addvar1<-c('Plot Name','plotname','A3_A1',rep(NA,4),'Pasted character string to identify unique plots',NA)
   addvar2<-c('Plot Half Name','plothalfname','A3_A1_A1',rep(NA,4),'Pasted character string to identify unique plot halves',NA)
-  data_dic<-cbind(data_dic,addvar1,addvar2)
-  colnames(data_dic)<-c(colnames(data_dic)[1:n2],paste('v',numvars+1, sep=''),paste('v',numvars+2, sep=''))
+  addvar3<-c('Year Plot Name','yrplotname','I4_A3_A1',rep(NA,4),'Pasted character string to identify unique plots by year',NA)
+  addvar4<-c('Year Plot Half Name','yrplothalfname','I4_A3_A1_A1',rep(NA,4),'Pasted character string to identify unique plot halves by year',NA)
+  data_dic<-cbind(data_dic,addvar1,addvar2,addvar3,addvar4)
+  colnames(data_dic)<-c(colnames(data_dic)[1:n2],paste('v',numvars+1, sep=''),paste('v',numvars+2, sep=''),paste('v',numvars+3, sep=''),paste('v',numvars+4, sep=''))
   return(data_dic)
 }
 
@@ -166,27 +175,14 @@ v_dic<-data_dic
 
 
 #########################################################
-#reshape dataframes into long format: s (soil) and v (veg)
-library(reshape2)
-
-colnames(s)
-sm<-melt(s,id.vars=c('year','plothalfid','plothalfname','plotid','plotname','inv','depth'),
-         measure.vars=c('nhi','noi','toti','ammonifd','nitrifd','minzd','soilmoi','som'))
-
-colnames(v)
-vm<-melt(v,id.vars=c('year','plothalfid','plothalfname','plotid','plotname','inv'),
-         measure.vars=c('mv','nat','litter','total','percpar','soiltemp'))
-
-
-#########################################################
-#export clean and reshaped files
+#export clean files
 
 #soil data (sm)
-write.table(sm, "e8DataPackage_080314_clean/e8_plothalfSoilData_clean.txt",sep="\t", row.names=F)
+write.table(s, "e8DataPackage_080314_clean/e8_plothalfSoilData_clean.txt",sep="\t", row.names=F)
 write.table(s_dic, "e8DataPackage_080314_clean/e8_plothalfSoilData_dictionary_clean.txt",sep="\t", row.names=F)
 
 #veg data (vm)
-write.table(vm, "e8DataPackage_080314_clean/e8_plothalfVegData_clean.txt",sep="\t", row.names=F)
+write.table(v, "e8DataPackage_080314_clean/e8_plothalfVegData_clean.txt",sep="\t", row.names=F)
 write.table(v_dic, "e8DataPackage_080314_clean/e8_plothalfVegData_dictionary_clean.txt",sep="\t", row.names=F)
 
 #plot location data (p)
