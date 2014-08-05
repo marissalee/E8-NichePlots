@@ -41,28 +41,19 @@ View(sv)
 #########################################################
 #Plot: invader biomass vs native subplot resource availability... color points by year
 library(ggplot2)
-
 str(sv)
 sv$year<-as.factor(sv$year)
 
 soil_shortname<-c('noi','toti','nitrifd','minzd','soilmoi')
 soil_longname<-c('Nitrate (ug/G) in Reference Plot','Total Inorganic N (ug/G) in Reference Plot','Nitrification (ug/G*d) in Reference Plot','Mineralization (ug/G*d) in Reference Plot','Soil Moisture (%) in Reference Plot')
 
+colnames(sv)
+i<-0
 for (i in 1:length(soil_shortname)){
-  plot(x = sv[,soil_shortname[i]], y = sv$mv,
-       xlab='Microstegium biomass (g)', ylab=soil_longname[i],
-       type='n')
-  points # add for each year
-  line # add if lm has a signif slope
+  p<-ggplot(sv,aes(sv[,soil_shortname[i]], y = mv)) + geom_point() + 
+    xlab(soil_longname[i]) + ylab("Microstegium biomass (g)")
+  print(p)
 }
-
-soil_longname[i]
-
-
-i<-1
-sv[,soil_shortname[i]]
-
-
 
 
 
