@@ -40,7 +40,7 @@ View(sv)
 
 #########################################################
 #Plot: invader biomass vs native subplot resource availability... color points by year
-library(ggplot2); theme_set(theme_minimal())
+library(ggplot2); theme_set(theme_bw())
 str(sv)
 sv$year<-as.factor(sv$year)
 
@@ -49,10 +49,36 @@ soil_longname<-c('Nitrate (ug/G) in Reference Plot','Total Inorganic N (ug/G) in
 
 i<-0
 for (i in 1:length(soil_shortname)){
-  p<-ggplot(sv,aes(sv[,soil_shortname[i]], y = mv)) + geom_point() + 
+  p<-ggplot(sv,aes(sv[,soil_shortname[i]], y = mv)) + geom_point(aes(color=year)) +
+    geom_smooth(aes())+
     xlab(soil_longname[i]) + ylab("Microstegium biomass (g)")
   print(p)
 }
+
+i<-0
+store<-numeric(0)
+for (i in 1:length(soil_shortname)){
+  x<-sv[,soil_shortname[i]]
+  y<-sv[,'mv']
+  year<-sv[,'year']
+  fit<-lm(y~x*year)
+  pvalx<-summary(fit)$coefficients[2,4]
+  pvalyear<-summary(fit)$coefficients[3,4]
+  pvalint<-summary(fit)$coefficients[4,4]
+  r2<-summary(fit)$r.squared
+  row<-c(pvalx, pvalyear, pvalint,r2)
+  store<-rbind(store,row)
+}
+colnames(store)<-c('pvalx','pvalyear','pvalint','r2')
+rownames(store)<-soil_shortname
+store
+
+
+
+
+
+
+
 
 
 
