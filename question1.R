@@ -2,6 +2,10 @@
 #files needed: tab-delim files in 'e8DataPackage_080314_clean' folder
 #question1: How does invader biomass vary across resource availability?
 
+library(ggplot2); theme_set(theme_bw())
+library(dplyr)
+library(reshape2)
+library(doBy)
 #########################################################
 #load data
 
@@ -16,7 +20,6 @@ vd_dic<-read.table("e8DataPackage_080314_clean/e8_plothalfVegData_dictionary_cle
 
 #########################################################
 #Make dataframe to plot: invader biomass vs native subplot resource availability
-library(dplyr)
 
 #pull out just the invaded rows of data
 vdt1<-filter(vd,inv == "I")
@@ -41,17 +44,15 @@ View(sv)
 #########################################################
 #Invader biomass vs native subplot resource availability... color points by year
 
-library(ggplot2); theme_set(theme_bw())
-
 #reshape
 colnames(sv)
-sv1<-sv[,c(1,8,9,17)]
-library(reshape2)
-sv2<-melt(sv1, measure.var=c('noi','toti'))
+sv1<-sv[,c(1,7,8,9,17)]
+sv2<-melt(sv1, measure.var=c('nhi','noi','toti'))
 sv2$year<-as.factor(sv2$year)
 
 #rename variables
 sv2s <- sv2
+levels(sv2s$variable)[levels(sv2s$variable)=="nhi"] <- "Ammonium (ug/G)"
 levels(sv2s$variable)[levels(sv2s$variable)=="noi"] <- "Nitrate (ug/G)"
 levels(sv2s$variable)[levels(sv2s$variable)=="toti"] <- "Total Inorganic N (ug/G)"
 levels(sv2s$variable)[levels(sv2s$variable)=="nitrifd"] <- "Nitrification (ug/G*d)"
@@ -62,12 +63,10 @@ s<-ggplot(sv2s,aes(sv2s, x=value, y = mv)) +
   geom_point(aes(color=year)) +
   facet_wrap(~variable+year, scales='free_x', ncol=2) +
   xlab("Reference plot value") + ylab("Microstegium biomass (g)") +
-  geom_smooth(method='lm',se=F)
+  geom_smooth(method='lm',se=T)
 s
 
-#outliers
-#figure out how to only include a lm line on the signif plot (toti 2013)
-#check out how nhi looks
+#outliers?
 
 
 ##########################
@@ -95,9 +94,11 @@ GetCoefs<-function(fit){
   return(store)
 }
 
+colnames(sv12)
+endcol<-4
 #Fxn to calc pvals and coefs
-AnotherFxn<-function(data){
-  xvars<-colnames(data)[2:3]
+AnotherFxn<-function(data, endcol){
+  xvars<-colnames(data)[2:endcol]
   store<-numeric(0)
   i<-0
   for (i in 1:length(xvars)){
@@ -114,22 +115,23 @@ AnotherFxn<-function(data){
 }
 
 #Do it!
-result12<-AnotherFxn(sv12)
+result12<-AnotherFxn(sv12, endcol)
 colnames(result12)<-c('pvalx','r2','int', 'coefx')
 result12
 
-result13<-AnotherFxn(sv13)
+result13<-AnotherFxn(sv13, endcol)
 colnames(result13)<-c('pvalx','r2','int', 'coefx')
 result13
 
 #Make a nice table
-year<-c(rep('2012',2),rep('2013',2))
-tmp<-c("Nitrate (ug/G)","Total Inorganic N (ug/G)")
+varnum<-endcol-1
+year<-c(rep('2012',varnum),rep('2013',varnum))
+tmp<-c("Ammonium (ug/G)","Nitrate (ug/G)","Total Inorganic N (ug/G)")
 xvar<-rep(tmp,2)
 tmp1<-rbind(result12,result13)
 tmp2<-data.frame(xvar,year,tmp1)
 tmp2
-library(doBy)
 tmp3<-orderBy(~xvar,tmp2)
 tmp3[,3:5]<-round(tmp3[,3:5], digits=2)
 tab<-tmp3
+tab
