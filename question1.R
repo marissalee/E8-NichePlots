@@ -145,5 +145,5 @@ tmp2<-data.frame(xvar,year,tmp1)
 tmp3<-orderBy(~xvar,tmp2)
 tmp3[,3:5]<-round(tmp3[,3:5], digits=2)
 tab<-tmp3
-write.table(tab, file='q1tab.txt')
+write.table(tab, file='q1tab.txt', sep="\t", row.names=F)
 

@@ -69,7 +69,7 @@ p2.n + geom_text(aes(label=ifelse((nat.vals>4*IQR(nat.vals)|inv.vals>4*IQR(inv.v
 ggsave(file = "p2_n_labels.png",scale=1,width = 6, height = 6)
 ##slope = 1
 s.n.pretty1<-transform(s.n.pretty,inv.vals=inv.vals-s.n.pretty$nat.vals)
-p3.n<-ggplot(s.n.pretty1,aes(s.n.pretty1, x=nat.vals, y = inv.vals)) + geom_point(aes(color=year)) + facet_wrap(~variable+year, scales='free_x', ncol=2) + xlab("Reference plot value") + ylab("Invaded plot value") + geom_smooth(method='lm',se=T) + geom_abline(intercept=0, slope=0, lty=2, color=1)
+p3.n<-ggplot(s.n.pretty1,aes(s.n.pretty1, x=nat.vals, y = inv.vals)) + geom_point(aes(color=year)) + facet_wrap(~variable+year, scales='free_x', ncol=2) + xlab("Reference plot value") + ylab("Invaded - Reference plot value") + geom_smooth(method='lm',se=T) + geom_abline(intercept=0, slope=0, lty=2, color=1)
 p3.n
 ggsave(file = "p3_n.png",scale=1,width = 6, height = 6)
 #p3 + geom_text(aes(label=plotname), hjust=1.1, size=3)
@@ -78,7 +78,7 @@ ggsave(file = "p3_n_labels.png",scale=1,width = 6, height = 6)
 
 #Total Inorganic N
 ##slope = 0
-p2.t<-ggplot(s.t.pretty,aes(s.t.pretty, x=nat.vals, y = inv.vals)) + geom_point(aes(color=year)) + facet_wrap(~variable+year, scales='fixed', ncol=2) + xlab("Reference plot value") + ylab("Invaded plot value") + geom_smooth(method='lm',se=T) + geom_abline(intercept=0, slope=1, lty=2, color=1)
+p2.t<-ggplot(s.t.pretty,aes(s.t.pretty, x=nat.vals, y = inv.vals)) + geom_point(aes(color=year)) + facet_wrap(~variable+year, scales='fixed', ncol=2) + xlab("Reference plot value") + ylab("Reference plot value") + geom_smooth(method='lm',se=T) + geom_abline(intercept=0, slope=1, lty=2, color=1)
 p2.t
 ggsave(file = "p2_t.png",scale=1,width = 6, height = 3)
 #p2.t + geom_text(aes(label=plotname),hjust=1.1, size=3)
@@ -86,7 +86,7 @@ p2.t + geom_text(aes(label=ifelse((nat.vals>4*IQR(nat.vals)|inv.vals>4*IQR(inv.v
 ggsave(file = "p2_t_labels.png",scale=1,width = 6, height = 3)
 ##slope = 1
 s.t.pretty1<-transform(s.t.pretty,inv.vals=inv.vals-s.t.pretty$nat.vals)
-p3.t<-ggplot(s.t.pretty1,aes(s.t.pretty1, x=nat.vals, y = inv.vals)) + geom_point(aes(color=year)) + facet_wrap(~variable+year, scales='free_x', ncol=2) + xlab("Reference plot value") + ylab("Invaded plot value") + geom_smooth(method='lm',se=T) + geom_abline(intercept=0, slope=0, lty=2, color=1)
+p3.t<-ggplot(s.t.pretty1,aes(s.t.pretty1, x=nat.vals, y = inv.vals)) + geom_point(aes(color=year)) + facet_wrap(~variable+year, scales='free_x', ncol=2) + xlab("Reference plot value") + ylab("Invaded - Reference plot value") + geom_smooth(method='lm',se=T) + geom_abline(intercept=0, slope=0, lty=2, color=1)
 p3.t
 ggsave(file = "p3_t.png",scale=1,width = 6, height = 3)
 #p3 + geom_text(aes(label=plotname), hjust=1.1, size=3)
@@ -109,7 +109,7 @@ p2.nOL + geom_text(aes(label=ifelse((nat.vals>4*IQR(nat.vals, na.rm=T)|inv.vals>
 ggsave(file = "p2_n_OL_labels_1to1.png",scale=1,width = 6, height = 6)
 ##slope = 1
 s.n.pretty1OL<-transform(s.n.prettyOL,inv.vals=inv.vals-s.n.prettyOL$nat.vals)
-p3.nOL<-ggplot(s.n.pretty1OL,aes(s.n.pretty1OL, x=nat.vals, y = inv.vals)) + geom_point(aes(color=year)) + facet_wrap(~variable+year, scales='fixed', ncol=2) + xlab("Reference plot value") + ylab("Invaded plot value") + geom_smooth(method='lm',se=T) + geom_abline(intercept=0, slope=0, lty=2, color=1)
+p3.nOL<-ggplot(s.n.pretty1OL,aes(s.n.pretty1OL, x=nat.vals, y = inv.vals)) + geom_point(aes(color=year)) + facet_wrap(~variable+year, scales='fixed', ncol=2) + xlab("Reference plot value") + ylab("Invaded - Reference plot value") + geom_smooth(method='lm',se=T) + geom_abline(intercept=0, slope=0, lty=2, color=1)
 p3.nOL
 ggsave(file = "p3_n_OL.png",scale=1,width = 6, height = 6)
 #p3 + geom_text(aes(label=plotname), hjust=1.1, size=3)
@@ -133,7 +133,7 @@ p2.tOL + geom_text(aes(label=ifelse((nat.vals>4*IQR(nat.vals, na.rm=T)|inv.vals>
 ggsave(file = "p2_t_OL_labels_1to1.png",scale=1,width = 6, height = 3)
 ##slope = 1
 s.t.pretty1OL<-transform(s.t.prettyOL,inv.vals=inv.vals-s.t.prettyOL$nat.vals)
-p3.tOL<-ggplot(s.t.pretty1OL,aes(s.t.pretty1OL, x=nat.vals, y = inv.vals)) + geom_point(aes(color=year)) + facet_wrap(~variable+year, scales='fixed', ncol=2) + xlab("Reference plot value") + ylab("Invaded plot value") + geom_smooth(method='lm',se=T) + geom_abline(intercept=0, slope=0, lty=2, color=1)
+p3.tOL<-ggplot(s.t.pretty1OL,aes(s.t.pretty1OL, x=nat.vals, y = inv.vals)) + geom_point(aes(color=year)) + facet_wrap(~variable+year, scales='fixed', ncol=2) + xlab("Reference plot value") + ylab("Invaded - Reference plot value") + geom_smooth(method='lm',se=T) + geom_abline(intercept=0, slope=0, lty=2, color=1)
 p3.tOL
 ggsave(file = "p3_t_OL.png",scale=1,width = 6, height = 3)
 #p3 + geom_text(aes(label=plotname), hjust=1.1, size=3)
@@ -215,7 +215,7 @@ tmp3[,c(3:6,8:10)]<-round(tmp3[,c(3:6,8:10)], digits=2)
 tmp3[,7]<-round(tmp3[,7], digits=4)
 tab<-tmp3
 tab
-write.table(tab, file='q2n3tab.txt')
+write.table(tab, file='q2n3tab.txt', sep="\t", row.names=F)
 
 #REMOVE OUTLIER 2012_K7_A
 #Do it!
@@ -237,7 +237,8 @@ tmp3.OL[,c(3:6,8:10)]<-round(tmp3.OL[,c(3:6,8:10)], digits=2)
 tmp3.OL[,7]<-round(tmp3.OL[,7], digits=4)
 tab.OL<-tmp3.OL
 tab.OL
-write.table(tab.OL, file='q2n3tab_OL.txt')
+write.table(tab.OL, file='q2n3tab_OL.txt', sep="\t", row.names=F)
+
 
 
 
