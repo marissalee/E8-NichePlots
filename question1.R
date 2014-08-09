@@ -43,35 +43,40 @@ sv<-cbind(sdt2[,c(1,3:16)], yrplotname=sdt2[,18], vdt2[,7:11], total=vdt2[,16])
 #########################################################
 #Invader biomass vs native subplot resource availability... color points by year
 
-#reshape
+#Make dataframes to plot 1) nhi, noi and 2) toti
 colnames(sv)
 sv1<-sv[,c(15,1,7,8,9,17)]
-head(sv1)
-sv2<-melt(sv1, measure.var=c('nhi','noi','toti'))
-sv2$year<-as.factor(sv2$year)
+sv.n<-melt(sv1, measure.var=c('nhi','noi'))
+sv.n$year<-as.factor(sv.n$year)
+head(sv.n) 
+sv.t<-melt(sv1, measure.var=c('toti'))
+sv.t$year<-as.factor(sv.t$year)
+head(sv.t)
 
-#rename variables
-sv2s <- sv2
-levels(sv2s$variable)[levels(sv2s$variable)=="nhi"] <- "Ammonium (ug/G)"
-levels(sv2s$variable)[levels(sv2s$variable)=="noi"] <- "Nitrate (ug/G)"
-levels(sv2s$variable)[levels(sv2s$variable)=="toti"] <- "Total Inorganic N (ug/G)"
-levels(sv2s$variable)[levels(sv2s$variable)=="nitrifd"] <- "Nitrification (ug/G*d)"
-levels(sv2s$variable)[levels(sv2s$variable)=="minzd"] <- "Mineralization (ug/G*d)"
-levels(sv2s$variable)[levels(sv2s$variable)=="soilmoi"] <- "Soil Moisture (%)"
+#Fxn to rename variables for ggplot
+PrettyVaribNames<-function(df, prettynames, vars){
+  prettydf <- df
+  for (i in 1:length(vars)){
+    levels(prettydf$variable)[levels(prettydf$variable)==vars[i]] <- prettynames[i]
+  }
+  return (prettydf)
+}
 
-p1<-ggplot(sv2s,aes(sv2s, x=value, y = mv)) + 
-  geom_point(aes(color=year)) +
-  facet_wrap(~variable+year, scales='free_x', ncol=2) +
-  xlab("Reference plot value") + ylab("Microstegium biomass (g)") +
-  geom_smooth(method='lm',se=T) +
-  geom_abline(intercept=0, slope=0, lty=2, color=1)
-p1
+#Provide pretty varibale names using fxn
+prettynames<-c("Ammonium (ug/G)","Nitrate (ug/G)","Total Inorganic N (ug/G)","Nitrification (ug/G*d)","Mineralization (ug/G*d)","Soil Moisture (%)") #for all
+vars<-c('nhi','noi','toti','nitrifd','minzd','soilmoi') #for all
+sv.n.pretty<-PrettyVaribNames(sv.n, prettynames, vars) #for plot with nhi and noi
+sv.t.pretty<-PrettyVaribNames(sv.t, prettynames, vars) #for plot with toti
 
-#outliers?
-p1 + geom_text(aes(label=plotname),
-               hjust=1.1, size=3)
-p1 + geom_text(aes(label=ifelse((value>4*IQR(value)|mv>4*IQR(mv)),as.character(plotname)," "), 
-                    hjust=1.1, size=3))
+#Ammonium and Nitrate
+p1.n<-ggplot(sv.n.pretty,aes(sv.n.pretty, x=value, y = mv)) + geom_point(aes(color=year)) + facet_wrap(~variable+year, scales='fixed', ncol=2) + xlab("Reference plot value") + ylab("Microstegium biomass (g)") + geom_smooth(method='lm',se=T) + geom_abline(intercept=0, slope=0, lty=2, color=1)
+#p1.n + geom_text(aes(label=plotname),hjust=1.1, size=3)
+p1.n + geom_text(aes(label=ifelse((value>4*IQR(value)|mv>4*IQR(mv)),as.character(plotname)," "), hjust=1.1, size=3)) #label outliers
+
+#Total inorganic N
+p1.t<-ggplot(sv.t.pretty,aes(sv.t.pretty, x=value, y = mv)) + geom_point(aes(color=year)) + facet_wrap(~variable+year, scales='fixed', ncol=2) + xlab("Reference plot value") + ylab("Microstegium biomass (g)") + geom_smooth(method='lm',se=T) + geom_abline(intercept=0, slope=0, lty=2, color=1)
+#p1 + geom_text(aes(label=plotname),hjust=1.1, size=3)
+p1.t + geom_text(aes(label=ifelse((value>4*IQR(value)|mv>4*IQR(mv)),as.character(plotname)," "), hjust=1.1, size=3)) #label outliers
 
 
 ##########################
