@@ -25,7 +25,7 @@ sdt<-filter(sd,depth == "T")
 
 #pick out the columns of interest
 colnames(sdt)
-sdf<-sdt[,c('year','inv','nhi','noi','toti')]
+sdf<-sdt[,c('plotname','year','inv','nhi','noi','toti')]
 
 #reshape
 colnames(sdf)
@@ -33,7 +33,7 @@ sdf1<-melt(sdf, measure.var=c('nhi','noi','toti'))
 sdf1$year<-as.factor(sdf1$year)
 sdt1N<-filter(sdf1,inv == "N") 
 sdt1I<-filter(sdf1,inv == "I") 
-sdf1<-data.frame(sdt1N[,c('year','variable')], nat.vals=sdt1N[,'value'], inv.vals=sdt1I[,'value'])
+sdf1<-data.frame(sdt1N[,c('plotname','year','variable')], nat.vals=sdt1N[,'value'], inv.vals=sdt1I[,'value'])
 head(sdf)
 
 #rename variables
@@ -45,14 +45,21 @@ levels(sdf1s$variable)[levels(sdf1s$variable)=="nitrifd"] <- "Nitrification (ug/
 levels(sdf1s$variable)[levels(sdf1s$variable)=="minzd"] <- "Mineralization (ug/G*d)"
 levels(sdf1s$variable)[levels(sdf1s$variable)=="soilmoi"] <- "Soil Moisture (%)"
 
+#slope = 0
 p2<-ggplot(sdf1s,aes(sdf1s, x=nat.vals, y = inv.vals)) + 
   geom_point(aes(color=year)) +
-  facet_wrap(~variable+year, scales='free_x', ncol=2) +
+  facet_wrap(~variable+year, scales='fixed', ncol=2) +
   xlab("Reference plot value") + ylab("Invaded plot value") +
   geom_smooth(method='lm',se=T) +
   geom_abline(intercept=0, slope=1, lty=2, color=1)
 p2
+#outliers?
+p2 + geom_text(aes(label=plotname),
+               hjust=1.1, size=3)
+p2 + geom_text(aes(label=ifelse((nat.vals>4*IQR(nat.vals)|inv.vals>4*IQR(inv.vals)),as.character(plotname)," "), 
+                   hjust=1.1, size=3))
 
+#slope = 1
 sdf1ss<-transform(sdf1s,inv.vals=inv.vals-sdf1s$nat.vals)
 p3<-ggplot(sdf1ss,aes(sdf1ss, x=nat.vals, y = inv.vals)) + 
   geom_point(aes(color=year)) +
@@ -61,9 +68,47 @@ p3<-ggplot(sdf1ss,aes(sdf1ss, x=nat.vals, y = inv.vals)) +
   geom_smooth(method='lm',se=T) +
   geom_abline(intercept=0, slope=0, lty=2, color=1)
 p3
+#outliers?
+p3 + geom_text(aes(label=plotname),
+               hjust=1.1, size=3)
+p3 + geom_text(aes(label=ifelse((nat.vals>4*IQR(nat.vals)|inv.vals>4*IQR(inv.vals)),as.character(plotname)," "), 
+                   hjust=1.1, size=3))
 
-#make scales 1:1
-#outliers
+#REMOVE OUTLIER 2012_K7_A
+sdf1sO<-sdf1s
+sdf1sO[sdf1sO$plotname=='K7_A' & sdf1sO$year=='2012',c('nat.vals','inv.vals')]<-NA #exclude 2012_K7_A
+
+#slope = 0
+p2o<-ggplot(sdf1sO,aes(sdf1s, x=nat.vals, y = inv.vals)) + 
+  geom_point(aes(color=year)) +
+  facet_wrap(~variable+year, scales='fixed', ncol=2) +
+  xlab("Reference plot value") + ylab("Invaded plot value") +
+  geom_smooth(method='lm',se=T) +
+  geom_abline(intercept=0, slope=1, lty=2, color=1) +
+  scale_x_continuous(limits=c(0,15))+
+  scale_y_continuous(limits=c(0,15))
+p2o
+#outliers?
+p2o + geom_text(aes(label=plotname),
+               hjust=1.1, size=3)
+p2o + geom_text(aes(label=ifelse((nat.vals>4*IQR(nat.vals, na.rm=T)|inv.vals>4*IQR(inv.vals, na.rm=T)),as.character(plotname)," "), 
+                   hjust=1.1, size=3))
+
+#slope = 1
+sdf1ssO<-transform(sdf1sO,inv.vals=inv.vals-sdf1s$nat.vals)
+p3o<-ggplot(sdf1ssO,aes(sdf1ss, x=nat.vals, y = inv.vals)) + 
+  geom_point(aes(color=year)) +
+  facet_wrap(~variable+year, scales='free_x', ncol=2) +
+  xlab("Reference plot value") + ylab("Invaded plot value") +
+  geom_smooth(method='lm',se=T) +
+  geom_abline(intercept=0, slope=0, lty=2, color=1)
+p3o
+#outliers?
+p3o + geom_text(aes(label=plotname),
+               hjust=1.1, size=3)
+p3o + geom_text(aes(label=ifelse((nat.vals>4*IQR(nat.vals, na.rm=T)|inv.vals>4*IQR(inv.vals, na.rm=T)),as.character(plotname)," "), 
+                   hjust=1.1, size=3))
+
 
 ##########################
 #linear model

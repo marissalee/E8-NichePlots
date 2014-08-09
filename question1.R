@@ -100,8 +100,8 @@ GetCoefs<-function(fit){
 }
 
 colnames(sv12)
-stcol<-2
-endcol<-4
+stcol<-3
+endcol<-5
 #Fxn to calc pvals and coefs
 AnotherFxn<-function(data, stcol, endcol){
   xvars<-colnames(data)[stcol:endcol]
