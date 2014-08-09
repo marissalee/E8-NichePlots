@@ -45,9 +45,9 @@ library(ggplot2); theme_set(theme_bw())
 
 #reshape
 colnames(sv)
-sv1<-sv[,c(1,8,9,11,12,13,17)]
+sv1<-sv[,c(1,8,9,17)]
 library(reshape2)
-sv2<-melt(sv1, measure.var=c('noi','toti','nitrifd','minzd','soilmoi'))
+sv2<-melt(sv1, measure.var=c('noi','toti'))
 sv2$year<-as.factor(sv2$year)
 
 #rename variables
@@ -65,47 +65,44 @@ s<-ggplot(sv2s,aes(sv2s, x=value, y = mv)) +
   geom_smooth(method='lm',se=F)
 s
 
+#outliers
+#figure out how to only include a lm line on the signif plot (toti 2013)
+#check out how nhi looks
+
 
 ##########################
 #linear model
-colnames(sv1)
 sv12<-sv1[year==2012,]
 sv13<-sv1[year==2013,]
 
 #Fxns to use within loop
 GetPvals<-function(fit){
   store<-numeric(0)
-  
   pvalx<-summary(fit)$coefficients[2,4]
   r2<-summary(fit)$r.squared
-  
   row<-c(pvalx, r2)
   store<-rbind(store,row)
-  colnames(store)<-c('pvalx','r2')
-  
+  colnames(store)<-c('pvalx','r2')  
   return(store)
 }
 GetCoefs<-function(fit){
   store<-numeric(0)
-  
   int<-summary(fit)$coefficients[1,1]
   coefx<-summary(fit)$coefficients[2,1]
-  
   row<-c(int, coefx)
   store<-rbind(store,row)
   colnames(store)<-c('int', 'coefx')
-  
   return(store)
 }
 
 #Fxn to calc pvals and coefs
 AnotherFxn<-function(data){
-  xvars<-colnames(data)[2:6]
+  xvars<-colnames(data)[2:3]
   store<-numeric(0)
   i<-0
   for (i in 1:length(xvars)){
-    x<-sv1[,i+1]
-    y<-sv1[,'mv']
+    x<-data[,i+1]
+    y<-data[,'mv']
     df<-data.frame(x,y)
     fit<-lm(y ~ x, df)
     pvals<-GetPvals(fit)
@@ -124,3 +121,15 @@ result12
 result13<-AnotherFxn(sv13)
 colnames(result13)<-c('pvalx','r2','int', 'coefx')
 result13
+
+#Make a nice table
+year<-c(rep('2012',2),rep('2013',2))
+tmp<-c("Nitrate (ug/G)","Total Inorganic N (ug/G)")
+xvar<-rep(tmp,2)
+tmp1<-rbind(result12,result13)
+tmp2<-data.frame(xvar,year,tmp1)
+tmp2
+library(doBy)
+tmp3<-orderBy(~xvar,tmp2)
+tmp3[,3:5]<-round(tmp3[,3:5], digits=2)
+tab<-tmp3
