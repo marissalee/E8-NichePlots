@@ -53,6 +53,13 @@ s<-ggplot(sdf1s,aes(sdf1s, x=nat.vals, y = inv.vals)) +
   geom_abline(intercept=0, slope=1, lty=2, color=1)
 s
 
+s<-ggplot(sdf1s,aes(sdf1s, x=nat.vals, y = inv.vals)) + 
+  geom_point(aes(color=year)) +
+  facet_wrap(~variable+year, scales='free_x', ncol=2) +
+  xlab("Reference plot value") + ylab("Invaded plot value") +
+  geom_smooth(method='lm',se=T)
+s
+
 #make scales 1:1
 #outliers
 
@@ -61,37 +68,48 @@ s
 s12<-sdf[year==2012,]
 s13<-sdf[year==2013,]
 
-colnames(s12)
-endcol<-4
+stcol<-3
+endcol<-5
+
 #Fxn to calc pvals and coefs
-AnotherFxn<-function(data, endcol){
-  xvars<-colnames(data)[2:endcol]
+AnotherFxn2<-function(data, stcol, endcol){
+  xvars<-colnames(data)[stcol:endcol]
   store<-numeric(0)
   i<-0
   for (i in 1:length(xvars)){
-    x<-data[,i+1]
-    y<-data[,'mv']
+    dataI<-data[data$inv=='I',]
+    dataN<-data[data$inv=='N',]
+    x<-dataN[,i+stcol-1]
+    y<-dataI[,i+stcol-1]
     df<-data.frame(x,y)
-    fit<-lm(y ~ x, df)
+    
+    fit<-lm(y ~ x, df) #slope = 0
     pvals<-GetPvals(fit)
     coefs<-GetCoefs(fit)
-    row<-c(pvals,coefs)
+    
+    fit2<-lm(y~x+offset(1*x), df) #slope = 1
+    pvals2<-GetPvals(fit2)
+    coefs2<-GetCoefs(fit2)
+    
+    row<-c(pvals,coefs,pvals2,coefs2)
     store<-rbind(store,row)
   }
   return(store)
 }
 
 #Do it!
-result12<-AnotherFxn(sv12, endcol)
-colnames(result12)<-c('pvalx','r2','int', 'coefx')
+result12<-AnotherFxn2(s12, stcol,endcol)
+tmp<-c('pvalx','r2','int', 'coefx')
+tmp2<-paste(tmp,"slope1",sep="_")
+colnames(result12)<-c(tmp,tmp2) # does slope differ from 0,1
 result12
 
-result13<-AnotherFxn(sv13, endcol)
-colnames(result13)<-c('pvalx','r2','int', 'coefx')
+result13<-AnotherFxn2(s13, stcol, endcol)
+colnames(result13)<-c(tmp,tmp2) #does slope differ from 0,1
 result13
 
 #Make a nice table
-varnum<-endcol-1
+varnum<-endcol-stcol+1
 year<-c(rep('2012',varnum),rep('2013',varnum))
 tmp<-c("Ammonium (ug/G)","Nitrate (ug/G)","Total Inorganic N (ug/G)")
 xvar<-rep(tmp,2)
@@ -99,7 +117,9 @@ tmp1<-rbind(result12,result13)
 tmp2<-data.frame(xvar,year,tmp1)
 tmp2
 tmp3<-orderBy(~xvar,tmp2)
-tmp3[,3:5]<-round(tmp3[,3:5], digits=2)
+dim(tmp3)
+tmp3[,c(3:6,8:10)]<-round(tmp3[,c(3:6,8:10)], digits=2)
+tmp3[,7]<-round(tmp3[,7], digits=4)
 tab<-tmp3
 tab
 

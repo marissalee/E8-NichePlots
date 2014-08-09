@@ -95,14 +95,15 @@ GetCoefs<-function(fit){
 }
 
 colnames(sv12)
+stcol<-2
 endcol<-4
 #Fxn to calc pvals and coefs
-AnotherFxn<-function(data, endcol){
-  xvars<-colnames(data)[2:endcol]
+AnotherFxn<-function(data, stcol, endcol){
+  xvars<-colnames(data)[stcol:endcol]
   store<-numeric(0)
   i<-0
   for (i in 1:length(xvars)){
-    x<-data[,i+1]
+    x<-data[,i+stcol-1]
     y<-data[,'mv']
     df<-data.frame(x,y)
     fit<-lm(y ~ x, df)
@@ -112,19 +113,19 @@ AnotherFxn<-function(data, endcol){
     store<-rbind(store,row)
   }
   return(store)
-}
+} #need to check this.
 
 #Do it!
-result12<-AnotherFxn(sv12, endcol)
+result12<-AnotherFxn(sv12, stcol,endcol)
 colnames(result12)<-c('pvalx','r2','int', 'coefx')
 result12
 
-result13<-AnotherFxn(sv13, endcol)
+result13<-AnotherFxn(sv13, stcol, endcol)
 colnames(result13)<-c('pvalx','r2','int', 'coefx')
 result13
 
 #Make a nice table
-varnum<-endcol-1
+varnum<-endcol-stcol+1
 year<-c(rep('2012',varnum),rep('2013',varnum))
 tmp<-c("Ammonium (ug/G)","Nitrate (ug/G)","Total Inorganic N (ug/G)")
 xvar<-rep(tmp,2)
