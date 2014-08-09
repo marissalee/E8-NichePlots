@@ -45,20 +45,22 @@ levels(sdf1s$variable)[levels(sdf1s$variable)=="nitrifd"] <- "Nitrification (ug/
 levels(sdf1s$variable)[levels(sdf1s$variable)=="minzd"] <- "Mineralization (ug/G*d)"
 levels(sdf1s$variable)[levels(sdf1s$variable)=="soilmoi"] <- "Soil Moisture (%)"
 
-s<-ggplot(sdf1s,aes(sdf1s, x=nat.vals, y = inv.vals)) + 
+p2<-ggplot(sdf1s,aes(sdf1s, x=nat.vals, y = inv.vals)) + 
   geom_point(aes(color=year)) +
   facet_wrap(~variable+year, scales='free_x', ncol=2) +
   xlab("Reference plot value") + ylab("Invaded plot value") +
   geom_smooth(method='lm',se=T) +
   geom_abline(intercept=0, slope=1, lty=2, color=1)
-s
+p2
 
-s<-ggplot(sdf1s,aes(sdf1s, x=nat.vals, y = inv.vals)) + 
+sdf1ss<-transform(sdf1s,inv.vals=inv.vals-sdf1s$nat.vals)
+p3<-ggplot(sdf1ss,aes(sdf1ss, x=nat.vals, y = inv.vals)) + 
   geom_point(aes(color=year)) +
   facet_wrap(~variable+year, scales='free_x', ncol=2) +
   xlab("Reference plot value") + ylab("Invaded plot value") +
-  geom_smooth(method='lm',se=T)
-s
+  geom_smooth(method='lm',se=T) +
+  geom_abline(intercept=0, slope=0, lty=2, color=1)
+p3
 
 #make scales 1:1
 #outliers

@@ -39,14 +39,14 @@ test #are plotid rows aligned? yes.
 colnames(sdt2); colnames(vdt2)
 
 sv<-cbind(sdt2[,c(1,3:16)], yrplotname=sdt2[,18], vdt2[,7:11], total=vdt2[,16])
-View(sv)
 
 #########################################################
 #Invader biomass vs native subplot resource availability... color points by year
 
 #reshape
 colnames(sv)
-sv1<-sv[,c(1,7,8,9,17)]
+sv1<-sv[,c(15,1,7,8,9,17)]
+head(sv1)
 sv2<-melt(sv1, measure.var=c('nhi','noi','toti'))
 sv2$year<-as.factor(sv2$year)
 
@@ -59,20 +59,25 @@ levels(sv2s$variable)[levels(sv2s$variable)=="nitrifd"] <- "Nitrification (ug/G*
 levels(sv2s$variable)[levels(sv2s$variable)=="minzd"] <- "Mineralization (ug/G*d)"
 levels(sv2s$variable)[levels(sv2s$variable)=="soilmoi"] <- "Soil Moisture (%)"
 
-s<-ggplot(sv2s,aes(sv2s, x=value, y = mv)) + 
+p1<-ggplot(sv2s,aes(sv2s, x=value, y = mv)) + 
   geom_point(aes(color=year)) +
   facet_wrap(~variable+year, scales='free_x', ncol=2) +
   xlab("Reference plot value") + ylab("Microstegium biomass (g)") +
-  geom_smooth(method='lm',se=T)
-s
+  geom_smooth(method='lm',se=T) +
+  geom_abline(intercept=0, slope=0, lty=2, color=1)
+p1
 
 #outliers?
+p1 + geom_text(aes(label=plotname),
+               hjust=1.1, size=3)
+p1 + geom_text(aes(label=ifelse((value>4*IQR(value)|mv>4*IQR(mv)),as.character(plotname)," "), 
+                    hjust=1.1, size=3))
 
 
 ##########################
 #linear model
-sv12<-sv1[year==2012,]
-sv13<-sv1[year==2013,]
+sv12<-sv1[sv1$year=='2012',]
+sv13<-sv1[sv1$year=='2013',]
 
 #Fxns to use within loop
 GetPvals<-function(fit){
