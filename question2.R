@@ -25,24 +25,24 @@ sdt<-filter(sd,depth == "T")
 
 #pick out the columns of interest
 colnames(sdt)
-sdf<-sdt[,c('plotname','year','inv','nhi','noi','toti')]
+sdf<-sdt[,c('plotname','year','inv','nhi','noi','toti','ammonifd','nitrifd','minzd')]
 
-#Make dataframes to plot 1) nhi, noi and 2) toti
+#Make dataframes to plot 1) nhi, noi and 2) toti and 3) ammonif nitrif minzd
 colnames(sdf)
-##for nhi and noi
-sdf.n<-melt(sdf, measure.var=c('nhi','noi'))
+##for nhi and noi and toti
+sdf.n<-melt(sdf, measure.var=c('nhi','noi','toti'))
 sdf.n$year<-as.factor(sdf.n$year)
 sdf.nN<-filter(sdf.n,inv == "N") 
 sdf.nI<-filter(sdf.n,inv == "I") 
 s.n<-data.frame(sdf.nN[,c('plotname','year','variable')], nat.vals=sdf.nN[,'value'], inv.vals=sdf.nI[,'value'])
 head(s.n)
-##for toti
-sdf.t<-melt(sdf, measure.var=c('toti'))
-sdf.t$year<-as.factor(sdf.t$year)
-sdf.tN<-filter(sdf.t,inv == "N") 
-sdf.tI<-filter(sdf.t,inv == "I") 
-s.t<-data.frame(sdf.tN[,c('plotname','year','variable')], nat.vals=sdf.tN[,'value'], inv.vals=sdf.tI[,'value'])
-head(s.t)
+##for ammonif, nitrifd, minzd
+sdf.m<-melt(sdf, measure.var=c('ammonifd','nitrifd','minzd'))
+sdf.m$year<-as.factor(sdf.m$year)
+sdf.mN<-filter(sdf.m,inv == "N") 
+sdf.mI<-filter(sdf.m,inv == "I") 
+s.m<-data.frame(sdf.mN[,c('plotname','year','variable')], nat.vals=sdf.mN[,'value'], inv.vals=sdf.mI[,'value'])
+head(s.m)
 
 #Fxn to rename variables for ggplot
 PrettyVaribNames<-function(df, prettynames, vars){
@@ -54,92 +54,46 @@ PrettyVaribNames<-function(df, prettynames, vars){
 }
 
 #Provide pretty varibale names using fxn
-prettynames<-c("Ammonium (ug/G)","Nitrate (ug/G)","Total Inorganic N (ug/G)","Nitrification (ug/G*d)","Mineralization (ug/G*d)","Soil Moisture (%)") #for all
-vars<-c('nhi','noi','toti','nitrifd','minzd','soilmoi') #for all
-s.n.pretty<-PrettyVaribNames(s.n, prettynames, vars) #for plot with nhi and noi
-s.t.pretty<-PrettyVaribNames(s.t, prettynames, vars) #for plot with toti
+prettynames<-c("Ammonium (ug/G)","Nitrate (ug/G)","Total Inorganic N (ug/G)","Ammonification","Nitrification (ug/G*d)","Mineralization (ug/G*d)","Soil Moisture (%)") #for all
+vars<-c('nhi','noi','toti','ammonifd','nitrifd','minzd','soilmoi') #for all
+s.n.pretty<-PrettyVaribNames(s.n, prettynames, vars) #for plot with nhi and noi and toti
+s.m.pretty<-PrettyVaribNames(s.m, prettynames, vars) #for plot with ammonif, nitrif, minz
 
-#Ammonium and Nitrate
+#Ammonium, Nitrate, Total inorganic N
 ##slope = 0
 p2.n<-ggplot(s.n.pretty,aes(s.n.pretty, x=nat.vals, y = inv.vals)) + geom_point(aes(color=year)) + facet_wrap(~variable+year, scales='fixed', ncol=2) + xlab("Reference plot value") + ylab("Invaded plot value") + geom_smooth(method='lm',se=T) + geom_abline(intercept=0, slope=1, lty=2, color=1)
 p2.n
-ggsave(file = "p2_n.png",scale=1,width = 6, height = 6)
+#ggsave(file = "p2_n.png",scale=1,width = 6, height = 6)
 #p2.n + geom_text(aes(label=plotname),hjust=1.1, size=3)
-p2.n + geom_text(aes(label=ifelse((nat.vals>4*IQR(nat.vals)|inv.vals>4*IQR(inv.vals)),as.character(plotname)," "), hjust=1.1, size=3)) #label outliers
-ggsave(file = "p2_n_labels.png",scale=1,width = 6, height = 6)
+p2.n + geom_text(aes(label=ifelse((nat.vals>4*IQR(nat.vals, na.rm=T)|inv.vals>4*IQR(inv.vals, na.rm=T)),as.character(plotname)," "), hjust=1.1, size=3)) #label outliers
+#ggsave(file = "p2_n_labels.png",scale=1,width = 6, height = 6)
 ##slope = 1
 s.n.pretty1<-transform(s.n.pretty,inv.vals=inv.vals-s.n.pretty$nat.vals)
 p3.n<-ggplot(s.n.pretty1,aes(s.n.pretty1, x=nat.vals, y = inv.vals)) + geom_point(aes(color=year)) + facet_wrap(~variable+year, scales='free_x', ncol=2) + xlab("Reference plot value") + ylab("Invaded - Reference plot value") + geom_smooth(method='lm',se=T) + geom_abline(intercept=0, slope=0, lty=2, color=1)
 p3.n
-ggsave(file = "p3_n.png",scale=1,width = 6, height = 6)
+#ggsave(file = "p3_n.png",scale=1,width = 6, height = 6)
 #p3 + geom_text(aes(label=plotname), hjust=1.1, size=3)
-p3.n + geom_text(aes(label=ifelse((nat.vals>4*IQR(nat.vals)|inv.vals>4*IQR(inv.vals)),as.character(plotname)," "), hjust=1.1, size=3)) #label outliers
-ggsave(file = "p3_n_labels.png",scale=1,width = 6, height = 6)
+p3.n + geom_text(aes(label=ifelse((nat.vals>4*IQR(nat.vals, na.rm=T)|inv.vals>4*IQR(inv.vals, na.rm=T)),as.character(plotname)," "), hjust=1.1, size=3)) #label outliers
+#ggsave(file = "p3_n_labels.png",scale=1,width = 6, height = 6)
 
-#Total Inorganic N
-##slope = 0
-p2.t<-ggplot(s.t.pretty,aes(s.t.pretty, x=nat.vals, y = inv.vals)) + geom_point(aes(color=year)) + facet_wrap(~variable+year, scales='fixed', ncol=2) + xlab("Reference plot value") + ylab("Reference plot value") + geom_smooth(method='lm',se=T) + geom_abline(intercept=0, slope=1, lty=2, color=1)
-p2.t
-ggsave(file = "p2_t.png",scale=1,width = 6, height = 3)
-#p2.t + geom_text(aes(label=plotname),hjust=1.1, size=3)
-p2.t + geom_text(aes(label=ifelse((nat.vals>4*IQR(nat.vals)|inv.vals>4*IQR(inv.vals)),as.character(plotname)," "), hjust=1.1, size=3)) #label outliers
-ggsave(file = "p2_t_labels.png",scale=1,width = 6, height = 3)
-##slope = 1
-s.t.pretty1<-transform(s.t.pretty,inv.vals=inv.vals-s.t.pretty$nat.vals)
-p3.t<-ggplot(s.t.pretty1,aes(s.t.pretty1, x=nat.vals, y = inv.vals)) + geom_point(aes(color=year)) + facet_wrap(~variable+year, scales='free_x', ncol=2) + xlab("Reference plot value") + ylab("Invaded - Reference plot value") + geom_smooth(method='lm',se=T) + geom_abline(intercept=0, slope=0, lty=2, color=1)
-p3.t
-ggsave(file = "p3_t.png",scale=1,width = 6, height = 3)
-#p3 + geom_text(aes(label=plotname), hjust=1.1, size=3)
-p3.t + geom_text(aes(label=ifelse((nat.vals>4*IQR(nat.vals)|inv.vals>4*IQR(inv.vals)),as.character(plotname)," "), hjust=1.1, size=3)) #label outliers
-ggsave(file = "p3_t_labels.png",scale=1,width = 6, height = 3)
 
-#REMOVE OUTLIER 2012_K7_A
-#Ammonium and Nitrate
-##remove outlier
-s.n.prettyOL<-s.n.pretty
-s.n.prettyOL[s.n.prettyOL$plotname=='K7_A' & s.n.prettyOL$year=='2012',c('nat.vals','inv.vals')]<-NA #exclude 2012_K7_A
+#Ammonif, Nitrif, Minzd
 ##slope = 0
-p2.nOL<-ggplot(s.n.prettyOL,aes(s.n.prettyOL, x=nat.vals, y = inv.vals)) + geom_point(aes(color=year)) + facet_wrap(~variable+year, scales='fixed', ncol=2) + xlab("Reference plot value") + ylab("Invaded plot value") + geom_smooth(method='lm',se=T) + geom_abline(intercept=0, slope=1, lty=2, color=1)
-p2.nOL
-ggsave(file = "p2_n_OL.png",scale=1,width = 6, height = 6)
-#p2.n + geom_text(aes(label=plotname),hjust=1.1, size=3)
-p2.nOL + geom_text(aes(label=ifelse((nat.vals>4*IQR(nat.vals, na.rm=T)|inv.vals>4*IQR(inv.vals, na.rm=T)),as.character(plotname)," "), hjust=1.1, size=3)) +
-  scale_x_continuous(limits=c(0,7)) +
-  scale_y_continuous(limits=c(0,7)) #label outliers
-ggsave(file = "p2_n_OL_labels_1to1.png",scale=1,width = 6, height = 6)
+p2.m<-ggplot(s.m.pretty,aes(s.m.pretty, x=nat.vals, y = inv.vals)) + geom_point(aes(color=year)) + facet_wrap(~variable+year, scales='fixed', ncol=2) + xlab("Reference plot value") + ylab("Invaded plot value") + geom_smooth(method='lm',se=T) + geom_abline(intercept=0, slope=1, lty=2, color=1)
+p2.m
+#ggsave(file = "p2_m.png",scale=1,width = 6, height = 6)
+#p2.m + geom_text(aes(label=plotname),hjust=1.1, size=3)
+p2.m + geom_text(aes(label=ifelse((nat.vals>4*IQR(nat.vals, na.rm=T)|inv.vals>4*IQR(inv.vals, na.rm=T)),as.character(plotname)," "), hjust=1.1, size=3)) #label outliers
+#ggsave(file = "p2_m_labels.png",scale=1,width = 6, height = 6)
 ##slope = 1
-s.n.pretty1OL<-transform(s.n.prettyOL,inv.vals=inv.vals-s.n.prettyOL$nat.vals)
-p3.nOL<-ggplot(s.n.pretty1OL,aes(s.n.pretty1OL, x=nat.vals, y = inv.vals)) + geom_point(aes(color=year)) + facet_wrap(~variable+year, scales='fixed', ncol=2) + xlab("Reference plot value") + ylab("Invaded - Reference plot value") + geom_smooth(method='lm',se=T) + geom_abline(intercept=0, slope=0, lty=2, color=1)
-p3.nOL
-ggsave(file = "p3_n_OL.png",scale=1,width = 6, height = 6)
+s.m.pretty1<-transform(s.m.pretty,inv.vals=inv.vals-s.m.pretty$nat.vals)
+p3.m<-ggplot(s.m.pretty1,aes(s.m.pretty1, x=nat.vals, y = inv.vals)) + geom_point(aes(color=year)) + facet_wrap(~variable+year, scales='free_x', ncol=2) + xlab("Reference plot value") + ylab("Invaded - Reference plot value") + geom_smooth(method='lm',se=T) + geom_abline(intercept=0, slope=0, lty=2, color=1)
+p3.m
+#ggsave(file = "p3_m.png",scale=1,width = 6, height = 6)
 #p3 + geom_text(aes(label=plotname), hjust=1.1, size=3)
-p3.nOL + geom_text(aes(label=ifelse((nat.vals>4*IQR(nat.vals, na.rm=T)|inv.vals>4*IQR(inv.vals, na.rm=T)),as.character(plotname)," "), hjust=1.1, size=3)) +
-  scale_x_continuous(limits=c(0,7)) #label outliers
-ggsave(file = "p3_n_OL_labels_1to1.png",scale=1,width = 6, height = 6)
+p3.m + geom_text(aes(label=ifelse((nat.vals>4*IQR(nat.vals, na.rm=T)|inv.vals>4*IQR(inv.vals, na.rm=T)),as.character(plotname)," "), hjust=1.1, size=3)) #label outliers
+#ggsave(file = "p3_m_labels.png",scale=1,width = 6, height = 6)
 
-#REMOVE OUTLIER 2012_K7_A
-#Total Inorganic N
-##remove outlier
-s.t.prettyOL<-s.t.pretty
-s.t.prettyOL[s.t.prettyOL$plotname=='K7_A' & s.t.prettyOL$year=='2012',c('nat.vals','inv.vals')]<-NA #exclude 2012_K7_A
-##slope = 0
-p2.tOL<-ggplot(s.t.prettyOL,aes(s.t.prettyOL, x=nat.vals, y = inv.vals)) + geom_point(aes(color=year)) + facet_wrap(~variable+year, scales='fixed', ncol=2) + xlab("Reference plot value") + ylab("Invaded plot value") + geom_smooth(method='lm',se=T) + geom_abline(intercept=0, slope=1, lty=2, color=1)
-p2.tOL
-ggsave(file = "p2_t_OL.png",scale=1,width = 6, height = 3)
-#p2.t + geom_text(aes(label=plotname),hjust=1.1, size=3)
-p2.tOL + geom_text(aes(label=ifelse((nat.vals>4*IQR(nat.vals, na.rm=T)|inv.vals>4*IQR(inv.vals, na.rm=T)),as.character(plotname)," "), hjust=1.1, size=3)) + 
-  scale_x_continuous(limits=c(0,11)) +
-  scale_y_continuous(limits=c(0,11)) #label outliers
-ggsave(file = "p2_t_OL_labels_1to1.png",scale=1,width = 6, height = 3)
-##slope = 1
-s.t.pretty1OL<-transform(s.t.prettyOL,inv.vals=inv.vals-s.t.prettyOL$nat.vals)
-p3.tOL<-ggplot(s.t.pretty1OL,aes(s.t.pretty1OL, x=nat.vals, y = inv.vals)) + geom_point(aes(color=year)) + facet_wrap(~variable+year, scales='fixed', ncol=2) + xlab("Reference plot value") + ylab("Invaded - Reference plot value") + geom_smooth(method='lm',se=T) + geom_abline(intercept=0, slope=0, lty=2, color=1)
-p3.tOL
-ggsave(file = "p3_t_OL.png",scale=1,width = 6, height = 3)
-#p3 + geom_text(aes(label=plotname), hjust=1.1, size=3)
-p3.tOL + geom_text(aes(label=ifelse((nat.vals>4*IQR(nat.vals, na.rm=T)|inv.vals>4*IQR(inv.vals, na.rm=T)),as.character(plotname)," "), hjust=1.1, size=3)) +
-  scale_x_continuous(limits=c(0,11)) #label outliers
-ggsave(file = "p3_t_OL_labels_1to1.png",scale=1,width = 6, height = 3)
 
 ##########################
 #linear model
@@ -194,7 +148,7 @@ s12<-sdf[sdf$year=='2012',]
 s13<-sdf[sdf$year=='2013',]
 colnames(s12)
 stcol<-4 #for all
-endcol<-6 #for all
+endcol<-9 #for all
 ##for 2012
 result12<-AnotherFxn2(s12, stcol,endcol)
 colna1<-c('pvalx','r2','int', 'coefx')
@@ -206,38 +160,81 @@ colnames(result13)<-c(colna1,colna2) #does slope differ from 0,1
 #Make a nice table
 varnum<-endcol-stcol+1
 year<-c(rep('2012',varnum),rep('2013',varnum))
-varna<-c("Ammonium (ug/G)","Nitrate (ug/G)","Total Inorganic N (ug/G)")
+varna<-c("Ammonium (ug/G)","Nitrate (ug/G)","Total Inorganic N (ug/G)",
+         "Ammonification (ug/G*d)","Nitrification (ug/G*d)","Mineralization (ug/G*d)")
 xvar<-rep(varna,2)
 tmp1<-rbind(result12,result13)
 tmp2<-data.frame(xvar,year,tmp1)
 tmp3<-orderBy(~xvar,tmp2)
+tmp3
 tmp3[,c(3:6,8:10)]<-round(tmp3[,c(3:6,8:10)], digits=2)
 tmp3[,7]<-round(tmp3[,7], digits=4)
 tab<-tmp3
-tab
 write.table(tab, file='q2n3tab.txt', sep="\t", row.names=F)
 
-#REMOVE OUTLIER 2012_K7_A
-#Do it!
-sdfOL<-sdf
-sdfOL[sdfOL$plotname=='K7_A' & sdfOL$year==2012,c('nhi','noi','toti')]<-NA #exclude 2012_K7_A
-sOL12<-sdfOL[sdfOL$year=='2012',]
-sOL13<-sdfOL[sdfOL$year=='2013',]
-##for 2012
-resultOL12<-AnotherFxn2(sOL12, stcol,endcol)
-colnames(resultOL12)<-c(colna1,colna2) # does slope differ from 0,1
-##for 2013
-resultOL13<-AnotherFxn2(s13, stcol, endcol)
-colnames(resultOL13)<-c(colna1,colna2) #does slope differ from 0,1
-#Make a nice table
-tmp1.OL<-rbind(resultOL12,resultOL13)
-tmp2.OL<-data.frame(xvar,year,tmp1.OL)
-tmp3.OL<-orderBy(~xvar,tmp2.OL)
-tmp3.OL[,c(3:6,8:10)]<-round(tmp3.OL[,c(3:6,8:10)], digits=2)
-tmp3.OL[,7]<-round(tmp3.OL[,7], digits=4)
-tab.OL<-tmp3.OL
-tab.OL
-write.table(tab.OL, file='q2n3tab_OL.txt', sep="\t", row.names=F)
+
+# plot just the significant correlations
+## indicate whether signif as a column in the dataset
+
+## do this for s.n.pretty
+head(s.n.pretty)
+s.n.pretty$signif0<-rep(NA,dim(s.n.pretty)[1])
+s.n.pretty1$signif1<-rep(NA,dim(s.n.pretty1)[1])
+### fill in signif0 for s.n.pretty
+filter1<-s.n.pretty$year == 2013 & s.n.pretty$variable == "Ammonium (ug/G)"
+filter2<-s.n.pretty$year == 2013 & s.n.pretty$variable == "Nitrate (ug/G)"
+filter3<-s.n.pretty$year == 2013 & s.n.pretty$variable == "Total Inorganic N (ug/G)"
+lgth<-length(s.n.pretty[filter1,'signif0'])
+s.n.pretty[filter1,'signif0']<-rep(1,lgth)
+s.n.pretty[filter2,'signif0']<-rep(1,lgth)
+s.n.pretty[filter3,'signif0']<-rep(1,lgth)
+#View(s.n.pretty)
+### fill in signif1 for s.n.pretty
+filter1<-s.n.pretty1$year == 2012 & s.n.pretty1$variable == "Ammonium (ug/G)"
+filter2<-s.n.pretty1$year == 2013 & s.n.pretty1$variable == "Ammonium (ug/G)"
+filter3<-s.n.pretty1$year == 2012 & s.n.pretty1$variable == "Nitrate (ug/G)"
+lgth<-length(s.n.pretty1[filter1,'signif1'])
+s.n.pretty1[filter1,'signif1']<-rep(1,lgth)
+s.n.pretty1[filter2,'signif1']<-rep(1,lgth)
+s.n.pretty1[filter3,'signif1']<-rep(1,lgth)
+#View(s.n.pretty1)
+
+## do this for s.m.pretty
+head(s.m.pretty)
+s.m.pretty$signif0<-rep(NA,dim(s.m.pretty)[1])
+s.m.pretty1$signif1<-rep(NA,dim(s.m.pretty)[1])
+### fill in signif0 for s.m.pretty
+filter1<-s.m.pretty$year == 2012 & s.m.pretty$variable == "Nitrification (ug/G*d)"
+filter2<-s.m.pretty$year == 2012 & s.m.pretty$variable == "Mineralization (ug/G*d)"
+filter3<-s.m.pretty$year == 2013 & s.m.pretty$variable == "Mineralization (ug/G*d)"
+lgth<-length(s.m.pretty[filter1,'signif0'])
+s.m.pretty[filter1,'signif0']<-rep(1,lgth)
+s.m.pretty[filter2,'signif0']<-rep(1,lgth)
+s.m.pretty[filter3,'signif0']<-rep(1,lgth)
+View(s.m.pretty)
+### fill in signif1 for s.m.pretty
+#all signif
+lgth<-length(s.m.pretty1[,'signif1'])
+s.m.pretty1[,'signif1']<-rep(1,lgth)
+#View(s.m.pretty1)
+
+# plot
+p2.n1<-ggplot(s.n.pretty,aes(s.n.pretty, x=nat.vals, y = inv.vals)) + geom_point(aes(color=year)) + facet_wrap(~variable+year, scales='fixed', ncol=2) + xlab("Reference plot value") + ylab("Invaded plot value") + geom_abline(intercept=0, slope=1, lty=2, color=1)
+p2.n1 + geom_smooth(data=subset(s.n.pretty, signif0 == 1), method=lm,se=T)
+ggsave(file = "p2_n_signif.png",scale=1,width = 6, height = 6)
+
+p3.n1<-ggplot(s.n.pretty1,aes(s.n.pretty1, x=nat.vals, y = inv.vals)) + geom_point(aes(color=year)) + facet_wrap(~variable+year, scales='free_x', ncol=2) + xlab("Reference plot value") + ylab("Invaded - Reference plot value")  + geom_abline(intercept=0, slope=0, lty=2, color=1)
+p3.n1 + geom_smooth(data=subset(s.n.pretty1, signif1 == 1), method=lm,se=T)
+ggsave(file = "p3_n_signif.png",scale=1,width = 6, height = 6)
+
+p2.m1<-ggplot(s.m.pretty,aes(s.m.pretty, x=nat.vals, y = inv.vals)) + geom_point(aes(color=year)) + facet_wrap(~variable+year, scales='fixed', ncol=2) + xlab("Reference plot value") + ylab("Invaded plot value") + geom_abline(intercept=0, slope=1, lty=2, color=1)
+p2.m1 + geom_smooth(data=subset(s.m.pretty, signif0 == 1), method=lm,se=T)
+ggsave(file = "p2_m_signif.png",scale=1,width = 6, height = 6)
+
+p3.m1<-ggplot(s.n.pretty1,aes(s.m.pretty1, x=nat.vals, y = inv.vals)) + geom_point(aes(color=year)) + facet_wrap(~variable+year, scales='free_x', ncol=2) + xlab("Reference plot value") + ylab("Invaded - Reference plot value")  + geom_abline(intercept=0, slope=0, lty=2, color=1)
+p3.m1 + geom_smooth(method=lm,se=T) # all signif
+ggsave(file = "p3_m_signif.png",scale=1,width = 6, height = 6)
+
 
 
 
