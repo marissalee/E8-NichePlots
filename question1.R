@@ -162,8 +162,8 @@ write.table(tab, file='q1tab.txt', sep="\t", row.names=F)
 head(sv.n.pretty)
 sv.n.pretty$signif0<-rep(NA,dim(sv.n.pretty)[1])
 ### fill in signif0 for s.n.pretty
-filter1<-sv.n.pretty$year == 2013 & s.n.pretty$variable == "Ammonium (ug/G)"
-filter2<-sv.n.pretty$year == 2013 & s.n.pretty$variable == "Total Inorganic N (ug/G)"
+filter1<-sv.n.pretty$year == 2013 & sv.n.pretty$variable == "Ammonium (ug/G)"
+filter2<-sv.n.pretty$year == 2013 & sv.n.pretty$variable == "Total Inorganic N (ug/G)"
 lgth<-length(sv.n.pretty[filter1,'signif0'])
 sv.n.pretty[filter1,'signif0']<-rep(1,lgth)
 sv.n.pretty[filter2,'signif0']<-rep(1,lgth)
