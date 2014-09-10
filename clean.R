@@ -134,6 +134,17 @@ n2<-numvars+1
 addvar1<-c('Plot Name','plotname','A3_A1',rep(NA,4),'Pasted character string to identify unique plots',NA)
 data_dic<-cbind(data_dic,addvar1)
 colnames(data_dic)<-c(colnames(data_dic)[1:n2],paste('v',numvars+1, sep=''))
+
+#add a column to identify which plots are not in the forest understory
+notreeplots<-c('G2_A','G48_D','G13_C')
+data$understory<-rep('Yes',length(data$plotname))
+data[data$plotname %in% notreeplots,'understory']<-'No'
+numvars<-dim(data_dic)[2]-1 #number of variables
+n2<-numvars+1
+addvar1<-c('Understory Plot','understory','A3',rep(NA,4),'The plot is in the forest understory (Yes) or not (No)',NA)
+data_dic<-cbind(data_dic,addvar1)
+colnames(data_dic)<-c(colnames(data_dic)[1:n2],paste('v',numvars+1, sep=''))
+data$understory<-as.factor(data$understory)
 str(data) #looks good
 str(data_dic) #looks good
 p<-data
@@ -195,8 +206,6 @@ write.table(t_dic, "e8DataPackage_080314_clean/e8_plotTrees_dictionary_clean.txt
 
 #timeline data (hd)
 write.table(h, "e8DataPackage_080314_clean/e8_timeline_clean.txt",sep="\t", row.names=F)
-
-
 
 
 

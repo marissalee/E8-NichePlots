@@ -17,6 +17,11 @@ sd_dic<-read.table("e8DataPackage_080314_clean/e8_plothalfSoilData_dictionary_cl
 vd<-read.table("e8DataPackage_080314_clean/e8_plothalfVegData_clean.txt",header=TRUE,sep="\t")
 vd_dic<-read.table("e8DataPackage_080314_clean/e8_plothalfVegData_dictionary_clean.txt",header=TRUE,sep="\t")
 
+#plot data(pd)
+pd<-read.table("e8DataPackage_080314_clean/e8_plotLoc_clean.txt",header=TRUE,sep="\t")
+pd_dic<-read.table("e8DataPackage_080314_clean/e8_plotLoc_dictionary_clean.txt",header=TRUE,sep="\t")
+
+
 
 #########################################################
 #Make dataframe to plot: invader biomass vs native subplot resource availability
@@ -38,14 +43,18 @@ test<-cbind(sdt2[,'plotid'],vdt2[,'plotid'])
 test #are plotid rows aligned? yes.
 colnames(sdt2); colnames(vdt2)
 
-sv<-cbind(sdt2[,c(1,3:16)], yrplotname=sdt2[,18], vdt2[,7:11], total=vdt2[,16])
+#add info about whether the plot is understory
+length(pd$understory)
+dim(sdt2)
+
+sv<-cbind(sdt2[,c(1,3:16)], yrplotname=sdt2[,18], vdt2[,7:11], total=vdt2[,16], understory = pd$understory)
 
 #########################################################
 #Invader biomass vs native subplot resource availability... color points by year
 
 #Make dataframes to plot 1) nhi, noi and 2) toti
 colnames(sv)
-sv1<-sv[,c(15,1,7,8,9,10,11,12,17)]
+sv1<-sv[,c(15,1,7,8,9,10,11,12,17,23)]
 #for nhi, noi, toti
 sv.n<-melt(sv1, measure.var=c('nhi','noi','toti'))
 sv.n$year<-as.factor(sv.n$year)
@@ -176,11 +185,11 @@ sv.m.pretty$signif0<-rep(NA,dim(sv.m.pretty)[1])
 #none are signif
 
 # plot
-p1.n1<-ggplot(sv.n.pretty,aes(sv.n.pretty, x=value, y = mv)) + geom_point(aes(color=year)) + facet_wrap(~variable+year, scales='fixed', ncol=2) + xlab("Reference plot value") + ylab("Microstegium biomass (g)") +  geom_abline(intercept=0, slope=0, lty=2, color=1)
+p1.n1<-ggplot(sv.n.pretty,aes(sv.n.pretty, x=value, y = mv)) + geom_point(aes(color=understory)) + facet_wrap(~variable+year, scales='fixed', ncol=2) + xlab("Reference plot value") + ylab("Microstegium biomass (g)") +  geom_abline(intercept=0, slope=0, lty=2, color=1)
 p1.n1 + geom_smooth(data=subset(sv.n.pretty, signif0 == 1), method=lm,se=T)
 ggsave(file = "p1_n_signif.png",scale=1,width = 6, height = 6)
 
-p1.m<-ggplot(sv.m.pretty,aes(sv.m.pretty, x=value, y = mv)) + geom_point(aes(color=year)) + facet_wrap(~variable+year, scales='fixed', ncol=2) + xlab("Reference plot value") + ylab("Microstegium biomass (g)") + geom_abline(intercept=0, slope=0, lty=2, color=1)
+p1.m<-ggplot(sv.m.pretty,aes(sv.m.pretty, x=value, y = mv)) + geom_point(aes(color=understory)) + facet_wrap(~variable+year, scales='fixed', ncol=2) + xlab("Reference plot value") + ylab("Microstegium biomass (g)") + geom_abline(intercept=0, slope=0, lty=2, color=1)
 p1.m #none are signif
 ggsave(file = "p1_m_signif.png",scale=1,width = 6, height = 6)
 

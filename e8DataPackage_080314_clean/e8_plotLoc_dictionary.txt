@@ -1,10 +1,10 @@
-"variableID"	"v1"	"v2"	"v3"	"v4"	"v5"	"v6"	"v7"	"v8"	"v9"	"v10"
-"variable long name"	"Plot Half ID"	"Plot ID"	"Site"	"Rep"	"Invaded or Native"	"Soil Basin"	"Description"	"GPS Coordinate N"	"GPS Coordinate W"	"Plot Name"
-"variable short name"	"plothalfid"	"plotid"	"site"	"rep"	"inv"	"soilbasin"	"description"	"coord_N"	"coord_W"	"plotname"
-"format"	"I2"	"I2"	"A3"	"A1"	"A1"	"A1"	"A"	"F"	"F"	"A3_A1"
-"units"	NA	NA	NA	NA	NA	NA	NA	"deg N"	"deg W"	NA
-"minimum value"	"1"	"1"	NA	NA	NA	NA	NA	"35.9915"	"78.95335"	NA
-"maximum value"	"36"	"18"	NA	NA	NA	NA	NA	"36.02818"	"79.00536"	NA
-"average"	"18.5"	"9.5"	NA	NA	NA	NA	NA	"36.01085611"	"78.97808278"	NA
-"description"	"Unique ID for each plot half.  Each plot consists of an invaded and native subplot"	"Unique ID for each plot"	"Area that contains one or more plots, usually named based on the Duke Forest gate number or other identifying feature of the location"	"Unique for each plot within a Site"	"Identifies whether the subplot  (aka plot half) is invaded or native"	"Identifies the soil basin in which the plot is located.  CODE: T=Triassic Basin, C=Carolina Slate Belt"	"Brief description of where the plot is located within the site"	"GPS Coordinate N"	"GPS Coordinate W; data was collected with Wright Lab GPS unit"	"Pasted character string to identify unique plots"
-"source"	NA	NA	NA	NA	NA	"Geology maps; see experimental design and methods files"	NA	"Data was collected with Wright Lab GPS unit"	"Data was collected with Wright Lab GPS unit"	NA
+"variableID"	"v1"	"v2"	"v3"	"v4"	"v5"	"v6"	"v7"	"v8"	"v9"	"v10"	"v11"
+"variable long name"	"Plot Half ID"	"Plot ID"	"Site"	"Rep"	"Invaded or Native"	"Soil Basin"	"Description"	"GPS Coordinate N"	"GPS Coordinate W"	"Plot Name"	"Understory Plot"
+"variable short name"	"plothalfid"	"plotid"	"site"	"rep"	"inv"	"soilbasin"	"description"	"coord_N"	"coord_W"	"plotname"	"understory"
+"format"	"I2"	"I2"	"A3"	"A1"	"A1"	"A1"	"A"	"F"	"F"	"A3_A1"	"A3"
+"units"	NA	NA	NA	NA	NA	NA	NA	"deg N"	"deg W"	NA	NA
+"minimum value"	"1"	"1"	NA	NA	NA	NA	NA	"35.9915"	"78.95335"	NA	NA
+"maximum value"	"36"	"18"	NA	NA	NA	NA	NA	"36.02818"	"79.00536"	NA	NA
+"average"	"18.5"	"9.5"	NA	NA	NA	NA	NA	"36.01085611"	"78.97808278"	NA	NA
+"description"	"Unique ID for each plot half.  Each plot consists of an invaded and native subplot"	"Unique ID for each plot"	"Area that contains one or more plots, usually named based on the Duke Forest gate number or other identifying feature of the location"	"Unique for each plot within a Site"	"Identifies whether the subplot  (aka plot half) is invaded or native"	"Identifies the soil basin in which the plot is located.  CODE: T=Triassic Basin, C=Carolina Slate Belt"	"Brief description of where the plot is located within the site"	"GPS Coordinate N"	"GPS Coordinate W; data was collected with Wright Lab GPS unit"	"Pasted character string to identify unique plots"	"The plot is in the forest understory (Yes) or not (No)"
+"source"	NA	NA	NA	NA	NA	"Geology maps; see experimental design and methods files"	NA	"Data was collected with Wright Lab GPS unit"	"Data was collected with Wright Lab GPS unit"	NA	NA
