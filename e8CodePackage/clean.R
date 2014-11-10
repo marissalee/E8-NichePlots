@@ -1,27 +1,27 @@
 #clean.R
-#files needed: tab-delim files in 'e8DataPackage_080314' folder
+#files needed: tab-delim files in 'e8DataPackage' folder
 
 #########################################################
 #load data
 
 #soil data (sd)
-sd<-read.table("e8DataPackage_080314/e8_plothalfSoilData.txt",header=TRUE,sep="\t")
-sd_dic<-read.table("e8DataPackage_080314/e8_plothalfSoilData_dictionary.txt",header=TRUE,sep="\t")
+sd<-read.table("e8DataPackage/e8_plothalfSoilData.txt",header=TRUE,sep="\t")
+sd_dic<-read.table("e8DataPackage/e8_plothalfSoilData_dictionary.txt",header=TRUE,sep="\t")
 
 #veg data (vd)
-vd<-read.table("e8DataPackage_080314/e8_plothalfVegData.txt",header=TRUE,sep="\t")
-vd_dic<-read.table("e8DataPackage_080314/e8_plothalfVegData_dictionary.txt",header=TRUE,sep="\t")
+vd<-read.table("e8DataPackage/e8_plothalfVegData.txt",header=TRUE,sep="\t")
+vd_dic<-read.table("e8DataPackage/e8_plothalfVegData_dictionary.txt",header=TRUE,sep="\t")
 
 #plot location data (pd)
-pd<-read.table("e8DataPackage_080314/e8_plotLoc.txt",header=TRUE,sep="\t")
-pd_dic<-read.table("e8DataPackage_080314/e8_plotLoc_dictionary.txt",header=TRUE,sep="\t")
+pd<-read.table("e8DataPackage/e8_plotLoc.txt",header=TRUE,sep="\t")
+pd_dic<-read.table("e8DataPackage/e8_plotLoc_dictionary.txt",header=TRUE,sep="\t")
 
 #plot tree data (td)
-td<-read.table("e8DataPackage_080314/e8_plotTrees.txt",header=TRUE,sep="\t")
-td_dic<-read.table("e8DataPackage_080314/e8_plotTrees_dictionary.txt",header=TRUE,sep="\t")
+td<-read.table("e8DataPackage/e8_plotTrees.txt",header=TRUE,sep="\t")
+td_dic<-read.table("e8DataPackage/e8_plotTrees_dictionary.txt",header=TRUE,sep="\t")
 
 #timeline data (hd)
-hd<-read.table("e8DataPackage_080314/e8_timeline.txt",header=TRUE,sep="\t")
+hd<-read.table("e8DataPackage/e8_timeline.txt",header=TRUE,sep="\t")
 
 #########################################################
 #chop extra rows
@@ -189,23 +189,23 @@ v_dic<-data_dic
 #export clean files
 
 #soil data (sm)
-write.table(s, "e8DataPackage_080314_clean/e8_plothalfSoilData_clean.txt",sep="\t", row.names=F)
-write.table(s_dic, "e8DataPackage_080314_clean/e8_plothalfSoilData_dictionary_clean.txt",sep="\t", row.names=F)
+write.table(s, "e8DataPackage_clean/e8_plothalfSoilData_clean.txt",sep="\t", row.names=F)
+write.table(s_dic, "e8DataPackage_clean/e8_plothalfSoilData_dictionary_clean.txt",sep="\t", row.names=F)
 
 #veg data (vm)
-write.table(v, "e8DataPackage_080314_clean/e8_plothalfVegData_clean.txt",sep="\t", row.names=F)
-write.table(v_dic, "e8DataPackage_080314_clean/e8_plothalfVegData_dictionary_clean.txt",sep="\t", row.names=F)
+write.table(v, "e8DataPackage_clean/e8_plothalfVegData_clean.txt",sep="\t", row.names=F)
+write.table(v_dic, "e8DataPackage_clean/e8_plothalfVegData_dictionary_clean.txt",sep="\t", row.names=F)
 
 #plot location data (p)
-write.table(p, "e8DataPackage_080314_clean/e8_plotLoc_clean.txt",sep="\t", row.names=F)
-write.table(p_dic, "e8DataPackage_080314_clean/e8_plotLoc_dictionary.txt",sep="\t", row.names=F)
+write.table(p, "e8DataPackage_clean/e8_plotLoc_clean.txt",sep="\t", row.names=F)
+write.table(p_dic, "e8DataPackage_clean/e8_plotLoc_dictionary.txt",sep="\t", row.names=F)
 
 #plot tree data (t)
-write.table(t, "e8DataPackage_080314_clean/e8_plotTrees_clean.txt",sep="\t", row.names=F)
-write.table(t_dic, "e8DataPackage_080314_clean/e8_plotTrees_dictionary_clean.txt",sep="\t", row.names=F)
+write.table(t, "e8DataPackage_clean/e8_plotTrees_clean.txt",sep="\t", row.names=F)
+write.table(t_dic, "e8DataPackage_clean/e8_plotTrees_dictionary_clean.txt",sep="\t", row.names=F)
 
 #timeline data (hd)
-write.table(h, "e8DataPackage_080314_clean/e8_timeline_clean.txt",sep="\t", row.names=F)
+write.table(h, "e8DataPackage_clean/e8_timeline_clean.txt",sep="\t", row.names=F)
 
 
 
