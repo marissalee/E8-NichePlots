@@ -1,0 +1,118 @@
+---
+title: 'E8: Part1'
+author: "Marissa Lee"
+date: "October 23, 2015"
+output: pdf_document
+---
+
+**Filename: E8_1.Rmd'**
+**This markdown file does the following tasks:**
+1. Clean and merge
+2.
+
+```{r libraries, echo=TRUE}
+knitr::opts_chunk$set(cache=TRUE)
+
+library(plyr)
+library(reshape2)
+library(ggplot2)
+library(ggthemes)
+source('CODE/mytheme.R')
+
+figuresPath<-file.path(getwd()[1], "FIGURES_TABLES") #where to put the saved plots
+fig.height<-2.5 #inches
+fig.width<- 2.5 #inches
+fig.res<-300
+
+synthdataPath<-file.path(getwd()[1], "DATA", "DATA_SYNTHESIZED") #where to put the clean dataframes
+
+soilData<-read.table("DATA/e8_plothalfSoilData.txt", header=TRUE, sep="\t", stringsAsFactors = FALSE)
+vegData<-read.table("DATA/e8_plothalfVegData.txt", header=TRUE, sep="\t", stringsAsFactors = FALSE)
+plotLoc<-read.table("DATA/e8_plotLoc.txt", header=TRUE, sep="\t", stringsAsFactors = FALSE)
+plotTrees<-read.table("DATA/e8_plotTrees.txt", header=TRUE, sep="\t", stringsAsFactors = FALSE)
+timeline<-read.table("DATA/e8_timeline.txt", header=TRUE, sep="\t", stringsAsFactors = FALSE)
+```
+
+_________________________________________________________________
+# 1. Clean and merge into 1 dataframe
+```{r merge, echo=TRUE, message=FALSE, warning=FALSE}
+#soilData
+#add new identifiers
+soilData$plothalfid1<-paste(soilData$inv,soilData$plotid, sep="_") 
+#prune columns
+removeCols<-c('plothalfid','site','rep') 
+soilData.pruned<-soilData[,!colnames(soilData) %in% removeCols]
+#reshape so that each depth x meas has its own column
+soilData_melted <- melt(soilData.pruned,
+                        id.vars=c("plotid","plothalfid1",
+                                  "inv","depth","year"),
+                        variable.name = "measCat")
+soilData_melted$measCat2<-paste(soilData_melted$measCat, soilData_melted$depth, sep = '_')
+soilData_cast <- dcast(soilData_melted, plotid + plothalfid1 + inv + year ~ measCat2, value.var="value")
+
+
+#vegData
+#add new identifiers
+vegData$plothalfid1<-paste(vegData$inv,vegData$plotid, sep="_")
+#prune columns
+vegData.pruned<-vegData[,!colnames(vegData) %in% removeCols]
+#add a column
+vegData.pruned$total<-vegData.pruned$mv+vegData.pruned$nat #make a total understory biomass variable
+
+#merge soilData_cast and vegData
+soilVegData<-merge(soilData_cast, vegData.pruned)
+
+#add plot soil basin information
+tmp<-plotLoc[,c('plotid','soilbasin')]
+summ.tmp<-ddply(tmp, ~plotid, summarize,soilBasin=unique(soilbasin))
+soilVegData1<-merge(soilVegData,summ.tmp)
+
+#add tree data
+#calculate basal area/m2 from each tree's dbh value
+plotTrees$basalArea.m2<-(plotTrees$dbh * plotTrees$dbh) * 0.00007854 
+#summarize the total basal area/m2 per plot and that which is made up by either AM- or ECM-associated trees
+plotTrees.summ<-ddply(plotTrees, ~plotid, summarize,
+                      nTrees=length(plotid),
+                      BA_total=sum(basalArea.m2, na.rm=T),
+                      BA_AM=sum(basalArea.m2[myc=='A'], na.rm=T),
+                      BA_ECM=sum(basalArea.m2[myc=='E'], na.rm=T),
+                      PercBA_AM=(BA_AM/BA_total)*100,
+                      PercBA_ECM=(BA_ECM/BA_total)*100)
+#update the number of trees (there was a cell that was counted even for plots where there were no trees
+plotTrees.summ[plotTrees.summ$plotid %in% c(12,15),'nTrees']<-0
+plotTrees.summ[plotTrees.summ$plotid %in% c(12,15),c('PercBA_AM','PercBA_ECM')]<-NA
+tmp<-plotTrees.summ[,c('plotid','nTrees','BA_total','PercBA_ECM')]
+soilVegData2<-merge(soilVegData1,tmp)
+
+#save and export
+data<-soilVegData2
+```
+
+_________________________________________________________________
+# 2. Soil N data in years where 0-5cm and 5-15cm layers were measured separately.  Decide whether to aggregate values.
+```{r soilNagg, echo=TRUE, message=FALSE, warning=FALSE}
+#subset by year
+data.sub<-subset(data, year %in% c(2012, 2013))
+#reshape
+data.sub_melted <- melt(data.sub,id.vars=c("plotid","plothalfid1","inv","year"))
+data.sub_melted$value<-as.numeric(data.sub_melted$value)
+
+#subset by _B and _T
+data.sub1<-data.sub_melted[grepl("_B",data.sub_melted$variable) | grepl("_T",data.sub_melted$variable),]
+#add back the separate measCat and depth columns
+tmp<-ldply(strsplit(as.character(data.sub1$variable),"_", fixed=T))
+colnames(tmp)<-c('measCat','depth')
+data.sub2<-cbind(data.sub1, tmp)
+#correct the dataframe structure
+data.sub2$measCat<-factor(data.sub2$measCat, levels=measCat_order)
+data.sub2$depth<-factor(data.sub2$depth, levels=depth_order)
+data.sub2$inv<-factor(data.sub2$inv, levels=inv_order)
+#plot
+pHist.depth<-ggplot(data.sub2, aes(x=value, fill=depth)) + 
+  geom_bar() + mytheme + facet_wrap(~measCat, scales='free') +
+
+
+
+```
+
+
