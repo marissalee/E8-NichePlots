@@ -1,0 +1,37 @@
+"plothalfid"	"plotid"	"site"	"rep"	"inv"	"soilbasin"	"description"	"coord_N"	"coord_W"	"soilbasin_code"
+"1"	1	1	"G2"	"A"	"I"	"T"	"close to Gate 2 entrance"	36.02542	78.95335	1
+"2"	2	1	"G2"	"A"	"N"	"T"	"close to Gate 2 entrance"	36.02542	78.95335	1
+"3"	3	2	"G2"	"B"	"I"	"T"	"near 15-501 from Gate 2, wet"	36.00378	78.95908	1
+"4"	4	2	"G2"	"B"	"N"	"T"	"near 15-501 from Gate 2, wet"	36.00378	78.95908	1
+"5"	5	3	"G2"	"C"	"I"	"T"	"near 15-501 from Gate 2, dry"	36.00425	78.95874	1
+"6"	6	3	"G2"	"C"	"N"	"T"	"near 15-501 from Gate 2, dry"	36.00425	78.95874	1
+"7"	7	4	"LL"	"A"	"I"	"T"	"near Lemur Lane"	35.99788	78.96026	1
+"8"	8	4	"LL"	"A"	"N"	"T"	"near Lemur Lane"	35.99788	78.96026	1
+"9"	9	5	"LL"	"B"	"I"	"T"	"near home"	35.99763	78.96011	1
+"10"	10	5	"LL"	"B"	"N"	"T"	"near home"	35.99763	78.96011	1
+"11"	11	6	"LL"	"C"	"I"	"T"	"downslope from home"	35.99736	78.96053	1
+"12"	12	6	"LL"	"C"	"N"	"T"	"downslope from home"	35.99736	78.96053	1
+"13"	13	7	"CEB"	"A"	"I"	"T"	"closest to Cornw., wet"	35.99191	78.97319	1
+"14"	14	7	"CEB"	"A"	"N"	"T"	"closest to Cornw., wet"	35.99191	78.97319	1
+"15"	15	8	"CEB"	"B"	"I"	"T"	"near harvest"	35.99153	78.9734	1
+"16"	16	8	"CEB"	"B"	"N"	"T"	"near harvest"	35.99153	78.9734	1
+"17"	17	9	"CEB"	"C"	"I"	"T"	"near fern patch, wet"	35.9915	78.9743	1
+"18"	18	9	"CEB"	"C"	"N"	"T"	"near fern patch, wet"	35.9915	78.9743	1
+"19"	19	10	"G48"	"B"	"I"	"C"	"close to Gate 48 entrance, wet"	36.01677	79.00483	0
+"20"	20	10	"G48"	"B"	"N"	"C"	"close to Gate 48 entrance, wet"	36.01677	79.00483	0
+"21"	21	11	"G48"	"C"	"I"	"C"	"near Gate 48 trail, dry"	36.01794	79.00536	0
+"22"	22	11	"G48"	"C"	"N"	"C"	"near Gate 48 trail, dry"	36.01794	79.00536	0
+"23"	23	12	"G48"	"D"	"I"	"C"	"Gate 48 harvest downslope from trail"	36.01769	79.00536	0
+"24"	24	12	"G48"	"D"	"N"	"C"	"Gate 48 harvest downslope from trail"	36.01769	79.00536	0
+"25"	25	13	"G13"	"A"	"I"	"C"	"near 751 from Gate 13"	36.02772	78.98888	0
+"26"	26	13	"G13"	"A"	"N"	"C"	"near 751 from Gate 13"	36.02772	78.98888	0
+"27"	27	14	"G13"	"B"	"I"	"C"	"near 751 from Gate 13, wet"	36.02687	78.98893	0
+"28"	28	14	"G13"	"B"	"N"	"C"	"near 751 from Gate 13, wet"	36.02687	78.98893	0
+"29"	29	15	"G13"	"C"	"I"	"C"	"near harvest at Gate 13"	36.02725	78.98837	0
+"30"	30	15	"G13"	"C"	"N"	"C"	"near harvest at Gate 13"	36.02725	78.98837	0
+"31"	31	16	"G13"	"D"	"I"	"C"	"behind seed disp plots at Gate 13"	36.02818	78.98705	0
+"32"	32	16	"G13"	"D"	"N"	"C"	"behind seed disp plots at Gate 13"	36.02818	78.98705	0
+"33"	33	17	"K7"	"A"	"I"	"C"	"near 751 and Kerley"	36.01621	78.98204	0
+"34"	34	17	"K7"	"A"	"N"	"C"	"near 751 and Kerley"	36.01621	78.98204	0
+"35"	35	18	"K7"	"B"	"I"	"C"	"south of K751/A"	36.01552	78.98171	0
+"36"	36	18	"K7"	"B"	"N"	"C"	"south of K751/A"	36.01552	78.98171	0

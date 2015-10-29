@@ -9,11 +9,18 @@ measCat_order<-c('nhi', 'noi', 'toti',
                  'soilmoi','som')
 depth_order<-c("T","B")
 inv_order<-c("I","N")
+measCat_F<-paste(measCat_order,"F", sep="_")
+otherPH_vars<-c('mv','nat','litter','total','percpar','soiltemp')
+P_vars<-c('soilBasin','nTrees','BA_total','PercBA_ECM')
 
 #Factor labels
-prettylabels.meas<-c('Ammonium', 'Nitrate', 'Total inorg. N',
-                     'Ammonification', 'Nitrification', 'Mineralization',
-                     'Soil moisture','SOM')
+measCat_names<-c("Ammonium (ug/G)","Nitrate (ug/G)","Total Inorganic N (ug/G)",
+               "Ammonification (ug/G*d)","Nitrification (ug/G*d)","Mineralization (ug/G*d)",
+               "Soil Moisture (%)","Soil organic matter (%)") 
+otherPH_names<-c('Microstegium biomass','Non-Mv understory biomass','Litter biomass', 
+                 'Total understory biomass','%PAR','Soil temp.')
+P_names<-c('Soil basin','Number of trees in plot',
+           'Tree basal area in plot','%ECM-associated trees in plot')
 
 #my ggplot template
 mytheme <- theme_bw(base_size = 10, base_family = "Helvetica") +

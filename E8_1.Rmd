@@ -8,7 +8,8 @@ output: pdf_document
 **Filename: E8_1.Rmd'**
 **This markdown file does the following tasks:**
 1. Clean and merge
-2.
+2. Aggregate soil measurement values by depth for years 2012 and 2013; put back into main dataset
+3. Q1: How does invader biomass vary across resource availability in the reference plots?
 
 ```{r libraries, echo=TRUE}
 knitr::opts_chunk$set(cache=TRUE)
@@ -17,7 +18,11 @@ library(plyr)
 library(reshape2)
 library(ggplot2)
 library(ggthemes)
+library(gridExtra)
+library(lme4)
+library(lmerTest)
 source('CODE/mytheme.R')
+source('CODE/fxn_FitPlot.R')
 
 figuresPath<-file.path(getwd()[1], "FIGURES_TABLES") #where to put the saved plots
 fig.height<-2.5 #inches
@@ -31,6 +36,7 @@ vegData<-read.table("DATA/e8_plothalfVegData.txt", header=TRUE, sep="\t", string
 plotLoc<-read.table("DATA/e8_plotLoc.txt", header=TRUE, sep="\t", stringsAsFactors = FALSE)
 plotTrees<-read.table("DATA/e8_plotTrees.txt", header=TRUE, sep="\t", stringsAsFactors = FALSE)
 timeline<-read.table("DATA/e8_timeline.txt", header=TRUE, sep="\t", stringsAsFactors = FALSE)
+
 ```
 
 _________________________________________________________________
@@ -50,7 +56,6 @@ soilData_melted <- melt(soilData.pruned,
 soilData_melted$measCat2<-paste(soilData_melted$measCat, soilData_melted$depth, sep = '_')
 soilData_cast <- dcast(soilData_melted, plotid + plothalfid1 + inv + year ~ measCat2, value.var="value")
 
-
 #vegData
 #add new identifiers
 vegData$plothalfid1<-paste(vegData$inv,vegData$plotid, sep="_")
@@ -62,9 +67,15 @@ vegData.pruned$total<-vegData.pruned$mv+vegData.pruned$nat #make a total underst
 #merge soilData_cast and vegData
 soilVegData<-merge(soilData_cast, vegData.pruned)
 
+#add plot soil basin code and record new dataframe
+plotLoc$soilbasin_code<-0
+plotLoc[plotLoc$soilbasin=='T','soilbasin_code']<-1
+newfilename<-'plotLoc_procd.txt'
+write.table(plotLoc, file=paste(synthdataPath,newfilename, sep='/'), sep='\t')
+
 #add plot soil basin information
-tmp<-plotLoc[,c('plotid','soilbasin')]
-summ.tmp<-ddply(tmp, ~plotid, summarize,soilBasin=unique(soilbasin))
+tmp<-plotLoc[,c('plotid','soilbasin_code')]
+summ.tmp<-ddply(tmp, ~plotid, summarize,soilBasin=unique(soilbasin_code))
 soilVegData1<-merge(soilVegData,summ.tmp)
 
 #add tree data
@@ -86,17 +97,19 @@ soilVegData2<-merge(soilVegData1,tmp)
 
 #save and export
 data<-soilVegData2
+newfilename<-'data_procd.txt'
+write.table(data, file=paste(synthdataPath,newfilename, sep='/'), sep='\t')
+
 ```
 
 _________________________________________________________________
-# 2. Soil N data in years where 0-5cm and 5-15cm layers were measured separately.  Decide whether to aggregate values.
+# 2. Soil N data in years where 0-5cm and 5-15cm layers were measured separately.  Decide whether to aggregate values.... Aggregate values and put aggregated values into full dataset
 ```{r soilNagg, echo=TRUE, message=FALSE, warning=FALSE}
 #subset by year
 data.sub<-subset(data, year %in% c(2012, 2013))
 #reshape
 data.sub_melted <- melt(data.sub,id.vars=c("plotid","plothalfid1","inv","year"))
 data.sub_melted$value<-as.numeric(data.sub_melted$value)
-
 #subset by _B and _T
 data.sub1<-data.sub_melted[grepl("_B",data.sub_melted$variable) | grepl("_T",data.sub_melted$variable),]
 #add back the separate measCat and depth columns
@@ -109,10 +122,191 @@ data.sub2$depth<-factor(data.sub2$depth, levels=depth_order)
 data.sub2$inv<-factor(data.sub2$inv, levels=inv_order)
 #plot
 pHist.depth<-ggplot(data.sub2, aes(x=value, fill=depth)) + 
-  geom_bar() + mytheme + facet_wrap(~measCat, scales='free') +
+  geom_bar() + mytheme + facet_wrap(measCat~year, scales='free') +
+  ggtitle("Histogram of soil measurement values by soil depth and year")
+pHist.depth  
+#record plot
+newfilename<-'pHist_depth.png'
+png(paste(figuresPath,newfilename, sep='/'), 
+    units='in', width = fig.width*4, height = fig.height*4, res=fig.res)
+pHist.depth
+dev.off()
 
+#DECISION = aggregate by depth
+summ.data.sub2<-ddply(data.sub2, ~plotid+plothalfid1+inv+year+measCat, summarize,
+                      new.value=mean(value, na.rm=T),
+                      n=length(plothalfid1),
+                      note='aggregated by depth')
+#now, put this info back into the full dataframe
 
+#make a dataset without the dis-aggregated data
+data_melted <- melt(data,id.vars=c("plotid","plothalfid1","inv","year")) #melt down the full dataset
+data_melted$value<-as.numeric(data_melted$value) #make values numeric again
+uniqWo.B<-unique(data_melted$variable)[!grepl("_B",unique(data_melted$variable))] #isolate only the variables that do NOT included the non-aggregated data
+uniqWo.BT<-uniqWo.B[!grepl("_T",uniqWo.B)] #ditto
+data_m_woBT<-data_melted[data_melted$variable %in% uniqWo.BT,] #subset data by 'correct' variables
+selectvars<-unique(data_m_woBT$variable)[grepl("_F",unique(data_m_woBT$variable))] #select measCat variables with "_F"
+data_m_woBT_e<-data_m_woBT[!(data_m_woBT$year %in% c(2012,2013) & data_m_woBT$variable %in% selectvars), ] #remove rows without data because it has not yet been aggregated
+data_m_woBT_e$note<-NA
+
+#make a dataset with the correctly-aggregated data and comparable column names to data_m_woBT
+summ.data.sub2<-rename(summ.data.sub2, replace=c("new.value" = "value")) #rename new.value -> value
+summ.data.sub2$variable<-paste(summ.data.sub2$measCat, '_F',sep="")#measCat items should be ammended with '_F' to indicate that the values are representative of the full soil core depth... put this in a new column called 'variable'
+summ.data.sub3<-summ.data.sub2[,c('plotid','plothalfid1','inv','year','variable','value','note')]#get rid of 'n' and 'measCat' columns
+
+#merge
+data_a<-rbind(data_m_woBT_e,summ.data.sub3)
+#ddply(data_a, ~year+variable, summarize, n=length(plotid)) #check the dataframe structure
+#ddply(data_a, ~inv+variable, summarize, n=length(plotid)) #check the dataframe structure
+
+#add a column that categorizes the variable types
+data_a$varType<-NA
+data_a[grepl("_F", data_a$variable),'varType']<-'measCat'
+data_a[data_a$variable %in% c('mv','nat','litter','total'),'varType']<-'understoryBiom'
+data_a[data_a$variable %in% c('percpar','soiltemp','soilBasin'),'varType']<-'environParam'
+data_a[data_a$variable %in% c('nTrees','BA_total','PercBA_ECM'),'varType']<-'overstoryParam'
+
+#add a column that identifies whether the variable type is measured on the plot half or the plot level
+plotlevel.vars<-c('soilBasin','nTrees','BA_total','PercBA_ECM')
+plothalflevel.vars<-unique(data_a$variable)[!unique(data_a$variable) %in% plotlevel.vars]
+data_a$measLevel<-NA
+data_a[data_a$variable %in% plotlevel.vars,'measLevel']<-'plot'
+data_a[data_a$variable %in% plothalflevel.vars,'measLevel']<-'plothalf'
+
+#save and export
+newfilename<-'data_a_procd.txt'
+write.table(data_a, file=paste(synthdataPath,newfilename, sep='/'), sep='\t')
+```
+
+_________________________________________________________________
+# 3. Q1: Does invader abundance correlate with whole-plot and reference plot environmental conditions? Model: mvI_logt ~ variable + (1|year)
+```{r mvAbund, echo=TRUE, message=FALSE, warning=FALSE}
+#dataframe needs...rows by plot x year
+#plotid
+#year
+#mv_I (invaded area biomass)
+#plot-based variables
+#native plot half-based variables (measurement type)
+#value_N (measurement value in native area)
+#value_I (measurement value in invaded area)
+
+#subset mv biomass in invaded area plots by year
+data_mv.I<-subset(data_a, variable=='mv' & inv=='I')
+data_mv.I<-rename(data_mv.I, replace=c("value"="mv_I"))
+data_mv.I<-data_mv.I[,c('plotid','year','mv_I')]
+
+#subset plot variables
+data_plot<-subset(data_a, measLevel=='plot')
+summ.data_plot<-ddply(data_plot, ~plotid + year + variable, summarize,
+      uniq.value=paste(unique(value),collapse = "_"))
+data_plot.cast<-dcast(summ.data_plot, plotid + year ~ variable, value.var='uniq.value')
+
+#subset plothalf variables, reshape by inv
+data_plothalf<-subset(data_a, measLevel=='plothalf')
+data_plothalf.IN<-dcast(data_plothalf, plotid + year + variable ~ inv, value.var='value')
+data_plothalf.N<-data_plothalf.IN[,c('plotid','year','variable','N')]
+data_plothalf.N<-rename(data_plothalf.N, replace=c("N"="value_N"))
+
+#merge dataframes
+tmp1<-merge(data_mv.I,data_plot.cast)
+tmp2<-merge(tmp1, data_plothalf.N)
+
+#make plothalf variables wide and then melt everything down
+tmp2_cast<-dcast(tmp2, plotid + year + mv_I + soilBasin + nTrees + BA_total + PercBA_ECM ~ variable, value.var='value_N')
+data_mvI <- melt(tmp2_cast,id.vars=c("plotid","year","mv_I")) #melt down the full dataset
+data_mvI$value<-as.numeric(data_mvI$value)
+
+#Factor labels
+vars<-c(measCat_F, otherPH_vars, P_vars)
+var_names<-c(measCat_names, otherPH_names, P_names)
+factor.indx<-data.frame(variable=vars, var_names)
+data_mvI<-merge(data_mvI, factor.indx)
+data_mvI$variable<-factor(data_mvI$variable, levels=vars)
+data_mvI$var_names<-factor(data_mvI$var_names, levels=var_names)
+
+#look at distribution of mv biomass by year
+pHist.mv<-ggplot(data_mvI,aes(x=mv_I, fill=factor(year))) + 
+  geom_histogram() + mytheme + ggtitle('Histogram of Mv biomass by year') +
+  facet_wrap(~year, scales='fixed', ncol=1) 
+pHist.mv
+#get rid of mv biomass outlier
+data_mvI[data_mvI$mv_I>150,'mv_I']<-NA
+#again, look at distribution of mv biomass by year
+pHist.mv.OR<-ggplot(data_mvI,aes(x=mv_I, fill=factor(year))) + 
+  geom_histogram() + mytheme + ggtitle('Histogram of Mv biomass by year\nOutlier in 2011 removed') +
+  facet_wrap(~year, scales='fixed', ncol=1) 
+pHist.mv.OR
+
+#log-transform mv biomass
+data_mvI$mvI_logt<-log(data_mvI$mv_I)
+
+#plot again
+pHist.mv.OR.logt<-ggplot(data_mvI,aes(x=mvI_logt, fill=factor(year))) + 
+  geom_histogram() + mytheme + ggtitle('Histogram of Log-transformed Mv biomass by year\nOutlier removed') +
+  facet_wrap(~year, scales='fixed', ncol=1) 
+pHist.mv.OR.logt
+
+#plot scatter
+data_mvI1<-subset(data_mvI, variable != 'total') #this is typically the same as nat in reference plots
+data_mvI2<-subset(data_mvI1, variable != 'mv') #there are only 3 observations of Mv biomass in reference plots and the values are small
+data_mvI2$variable<-droplevels(data_mvI2$variable)
+pMv<-ggplot(data_mvI2,aes(x=value, y = mvI_logt, color=factor(year))) + 
+  geom_point() + mytheme +
+  facet_wrap(~var_names, scales='free') + 
+  xlab("Reference plot value") + ylab("Microstegium biomass (g)")
+pMv
+warnings()
+
+#run mixed effects models where year is a random effect and each variable is a fixed effect
+#FUNCTION TO FIT LME: mv_I ~ value + (1|year)... multiple observations of plots are years
+#look at data structure
+#ddply(data_mvI2, ~year+variable, summarize,n=length(value),n1=sum(!is.na(value)))
+#remove soiltemp because only have 1 yr of values
+data_mvI3<-subset(data_mvI2, variable != 'soiltemp') #there are only 3 observations of Mv biomass in reference plots and the values are small
+data_mvI3$variable<-droplevels(data_mvI3$variable)
+data_mvI3$plotid<-factor(data_mvI3$plotid)
+data_mvI3$year<-factor(data_mvI3$year)
+#run
+MvMods<-FitPlot.Mv(data_mvI3)
+MvMods_table<-ldply(MvMods[['results']])
+MvMods_table
+
+#put pretty names on here and save the figure
+grid.arrange(
+      textGrob('Microstegium biomass (log-transformed)', y=0.5, x=unit(1,'lines'), rot=90), # ylabel topleft
+      do.call(arrangeGrob,  MvMods[['figures']]),
+      textGrob(" "), #bottom left
+      textGrob("Variable value", x=0.5, y=unit(1,'lines')), #bottom right
+      widths = unit.c(unit(2.5, "lines"), unit(1, "npc") - unit(2.5, "lines")), 
+      heights = unit.c(unit(1, "npc") - unit(2.5, "lines"), unit(2.5, "lines")), 
+      nrow=2, ncol=2
+    )
+
+#check out the relationships between nTrees, BA_total, PercBA_ECM, percpar
+data.sub<-subset(data_mvI3, variable %in% c('nTrees','BA_total','percBA_ECM','percpar'))
+colnames(data.sub)
+```
+
+_________________________________________________________________
+# 4. Q2: How does reference nutrient availability correlate with invaded nutrient availability across sites? 
+4A. Piece-meal approach....Model: invVar ~ natVar + (1|plotid+year).. not really sure how to specify this... or Model: esVar ~ 1 + (1|year)
+```{r invVnat, echo=TRUE, message=FALSE, warning=FALSE}
+
+```
+4B. Ordination approach....Ordinate plothalfids in soil N space and look whether inv corresponds to variation and how soil N components load onto the axes
+```{r ordinPH, echo=TRUE, message=FALSE, warning=FALSE}
 
 ```
 
 
+
+_________________________________________________________________
+# 5. Q3: Do the following factors correspond to changes in soil N effect sizes: i)invader abundance, ii)time, iii)reference plot som?
+5A. Piece-meal approach... Model: esVar ~ variable + (1|year)
+```{r varVES, echo=TRUE, message=FALSE, warning=FALSE}
+
+```
+5B. Ordination approach... ordinate plotids in effect size soil N space and look whether any of the factors are important
+```{r ordinES, echo=TRUE, message=FALSE, warning=FALSE}
+
+```
