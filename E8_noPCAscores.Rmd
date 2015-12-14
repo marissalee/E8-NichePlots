@@ -1,0 +1,478 @@
+---
+title: 'E8 main document'
+author: "Marissa Lee"
+date: "October 23, 2015"
+output: pdf_document
+---
+
+**Filename: E8_main.Rmd'**
+
+_________________________________________________________________
+# 0. Import, clean, merge, load fxns
+```{r libraries, echo=FALSE}
+knitr::opts_chunk$set(cache=TRUE)
+
+#LIBRARIES
+library(plyr)
+library(reshape2)
+library(ggplot2) #plotting
+library(ggthemes) #ggplot accessories
+library(GGally) #????
+library(gtable)
+library(gridExtra) #for grid.arrange fxn
+library(lme4) #for mixed-effects models
+library(lmerTest) #for lmer p-values
+library(ggbiplot) #for pretty biplots
+library(vegan) #for adonis fxn to do perMANOVAs
+library(lavaan) #for structural equation modeling
+library(doBy) #the orderBy fxn
+library(merTools)
+
+#CUSTOM FUNCTIONS
+source('CODE/fxn_InvEffect.R') #used in Q1
+source('CODE/fxn_ggbiplot_q1.R') #used in Q1
+source('CODE/fxn_RefPCA.R') #used in Q2
+source('CODE/fxn_ScaleFit_q2.R') #used in Q2
+source('CODE/fxn_PCAhelpers.R') #used in Q2
+source('CODE/fxn_InteractionPlot_DF.R') #used in Q2
+source('CODE/fxn_XYPlot_DF.R') #used in Q3
+source('CODE/fxn_ggbiplot_q3.R') #used in Q3
+
+#THEME
+source('CODE/mytheme.R')
+
+#IMPORT, CLEAN, MERGE
+source('CODE/script_cleanMerge.R')
+#saves plot 'pHist_depth.png'
+#saves data 'data_a.txt' # aggregated mean(depth) for 2012 and 2013
+#saves data 'data_d.txt' # removed variables that were only measured in 2011 (i.e. full soil depth 0-15cm measurements)
+
+#decide what dataset to use
+data.choice<-data_d 
+```
+
+_________________________________________________________________
+# 1. Q1: Do soil N pools and fluxes shift in response to the presence of Microstegium? 
+A. Do an ordination of soil N pools and fluxes and test the role of invasion status with permMANOVA
+B. Investigate individual relationships using mixed effects models with year+site as a random effect and identify N variables that increase/decrease across sites.
+```{r q1, echo=FALSE, message=FALSE, warning=FALSE}
+vars #variables in the ordination
+source('CODE/script_q1.R')
+
+#A. Ordination
+#saves plot 'pPCA_q1.png' #ordination of soil N pools and fluxes by plot
+#saves table 'PCvar_q1.txt' #loadings of soil N pools and fluxes onto ordination PCs
+#saves table 'permMANOVA_q1.txt' #result of permMANOVA of the ordination given plot invasion status
+
+#B. Mixed effects models (soil N pool or flux value ~ inv + (1|siteYear))
+#saves table 'meanSummary_q1.txt' #summary of individual soil N pools and fluxes by year and invasion status
+#saves table 'summarySummary_q1.txt' #summary of individual mixed effect models for each soil N pool or flux
+#saves table 'posthocSummary_q1.txt' #post-hoc comparisons among years and invasion status
+#saves plot 'pScat_q1.png' #panels of soil N pool or flux ~ inv
+```
+
+_________________________________________________________________
+# 2. Q2: Do reference plot conditions and/or Microstegium biomass predict impact magnitudes?
+A. Calculate impact magnitude for each target variable (nitrate, nitrification, other variables detected in Q1 ordination)
+B. Test the role of reference plot conditions and Microstegium biomass on impacts individually using mixed effects models with year as a random effect
+```{r q2, echo=FALSE, message=FALSE, warning=FALSE}
+##A. Calculate impact, prep dataset
+
+#1. decide of difference variables
+diffVars<-c('noi_T','noi_B','ammonifd_T','ammonifd_B','nitrifd_T','nitrifd_B','minzd_T','minzd_B')
+
+#2. decide on what variables to include in the reference ordination
+#refVars
+#refVars2 #without PercBA_AM
+#refVars.AggPAR
+#refVars2.AggPAR #without PercBA_AM
+useThese_refVars<-refVars
+
+#3. decide whether to include PercBA_AM as a separate parameter
+#externalPercBA_AM<-'y'
+externalPercBA_AM<-'n'
+
+#4. prep dataset
+source('CODE/script_q2_prep.R')
+#View(data.q2)
+
+
+##B. Run models for each of the following (Inv. - Ref): nitrate, nitrif, ammonif, minz 
+
+####################################
+#a. delta nitrate (inv-ref)
+####################################
+colnames(data.q2)
+
+#ammonif
+data.plot<-data.frame(data.q2[,c('plotid','year','Diff_ammonifd_T','nTrees', 'soilmoi_T','som_T','som_B','mv_g.m2')])
+meanVal<-mean(data.plot$soilmoi_T)
+data.plot$soilmoi_T_BIN<-'Low soil moisture'
+data.plot[data.plot$soilmoi_T>meanVal,'soilmoi_T_BIN']<-'High soil moisture'
+
+
+modT<-lmer(Diff_ammonifd_T ~ 
+             soilmoi_T + soilmoi_B +
+             som_T + som_B + 
+             ph_T + ph_B + 
+             mv_g.m2 +
+             mv_g.m2:soilmoi_T +
+             (1|year), data=data.q2)
+summary(modT)
+
+ggplot(data.plot, aes(x=mv_g.m2, y=Diff_ammonifd_T, size=som_B, color=factor(year))) + 
+  geom_point() + facet_wrap(~soilmoi_T_BIN, ncol=1) + mytheme
+
+
+#nitrate
+data.plot<-data.frame(data.q2[,c('plotid','year','Diff_noi_T','ph_B', 'soilmoi_T','som_T','som_B','mv_g.m2','PercBA_AM')])
+meanVal<-mean(data.plot$ph_B)
+data.plot$ph_B_BIN<-'Low pH'
+data.plot[data.plot$ph_B>meanVal,'ph_B_BIN']<-'High pH'
+
+modT<-lmer(Diff_noi_T ~ 
+             soilmoi_T + soilmoi_B +
+             som_T + som_B +
+             ph_T + ph_B +
+             mv_g.m2 + 
+             mv_g.m2:ph_B + 
+             (1|year), data=data.q2)
+summary(modT)
+
+ggplot(data.plot, aes(x=mv_g.m2, y=Diff_noi_T, color=factor(year))) + 
+  geom_point() + facet_wrap(~ph_B_BIN, ncol=1) + mytheme
+    
+    
+modT<-lmer(mv_g.m2_logt ~ 
+             soilmoi_T + 
+             som_T +
+             ph_T + 
+             percpar + 
+             litter_g.m2 +
+             (1|year), data=data.q2)
+summary(modT)
+
+ modT<-lmer(log(litter_g.m2) ~ 
+             soilmoi_T + soilmoi_B +
+             som_T + som_B +
+             ph_T + ph_B +
+             (1|year), data=data.q2)
+summary(modT)
+
+
+```
+
+_________________________________________________________________
+# 3. Q3: Do reference plot conditions predict Microstegium biomass?
+A. Do an ordination of reference conditions and test the relationship between Microstegium biomass and reference conditions using permMANOVA.
+B. Investigate relationship between PC scores and Microstegium biomass using mixed effects models with year as a random effect.
+```{r q3, echo=FALSE, message=FALSE, warning=FALSE}
+#A. Do an ordination of reference conditions and test the relationship between Microstegium biomass and reference conditions using permMANOVA.
+#1) Identify dataframe with (x) reference plot condition variables and (y) Microstegium biomass
+#refVars
+data.q3<-data.q2.indp
+data.q3$plotYear<-paste(data.q3$plotid, data.q3$year, sep="_")
+
+#2) Ordinate reference conditions
+data.q3.rm<-data.q3[!rowSums(is.na(data.q3))>0,]
+tmp<-data.q3.rm[,useThese_refVars]
+colnames(tmp)<-useThese_refVars
+#cor(tmp) #look at correlation matrix
+row.names(tmp)<-data.q3.rm$plotYear
+tmp.scaled<-scale(tmp)
+PCA.res<-prcomp(tmp.scaled)
+pPCA_q3<-ggbiplot_q3(pcobj=PCA.res, df=data.q3.rm)
+pPCA_q3[['pBasic']]
+#save plot
+newfilename<-'pPCA_q3.png'
+png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*2.5, height = fig.height*2, res=fig.res)
+pPCA_q3[['pBasic']]
+dev.off()
+#variable contributions to PC1 and PC2
+PCvar<-PCA.var.contrib_q1(pca.obj=PCA.res)
+PCvar
+newfilename<-'PCvar_q3.txt'
+write.table(PCvar, file=paste(figuresPath,newfilename, sep='/'), sep='\t')
+#make dataframe
+df.PCA<-data.frame(plotYear=row.names(PCA.res$x), PCA.res$x)
+data.q3.PCA<-merge(data.q3.rm, df.PCA[,c(1:3)])
+
+#3) Do reference area and plot characteristics explain variation in Mv biomass? - perMANOVA on mv biomass
+perMANOVA<-adonis(tmp.scaled ~ mv_g.m2_logt, data = data.q3.PCA, method='eu')
+aov.tab.permanova<-data.frame(perMANOVA$aov.tab)
+aov.tab.permanova
+#save anova table
+newfilename<-'permMANOVA_q3.txt'
+write.table(aov.tab.permanova, file=paste(figuresPath,newfilename, sep='/'), sep='\t')
+
+
+#B. Do PC scores from the reference condition ordination predict mv biomass?
+#1) Fit model
+data.q3.PCA$year<-factor(data.q3.PCA$year)
+df.mod<-data.q3.PCA
+df.mod$PC2_neg1<-df.mod$PC2*-1
+
+#If PercBA_AM should be included separately from reference conditions...Identify PercBA_AM and merge it into dataset
+#externalPercBA_AM
+if(externalPercBA_AM == 'y'){
+  
+  #merge
+  df.mod<-merge(df.mod, data.AM.wide)
+
+  #make a bin for %AM
+  df.mod$MycBin<-NA
+  df.mod[df.mod$PercBA_AM >=0 & df.mod$PercBA_AM <50,'MycBin']<-'AM'
+  df.mod[df.mod$PercBA_AM >=50 & df.mod$PercBA_AM <=100,'MycBin']<-'ECM'
+  
+  mod<-lmer(mv_g.m2_logt~PC1*PC2*MycBin + (1|year), data=df.mod)
+}else{
+  mod<-lmer(mv_g.m2_logt~PC1*PC2_neg1 + (1|year), data=df.mod)
+}
+summary(mod)$coefficients
+#save anova table
+newfilename<-'summaryTable_q3.txt'
+write.table(summary(mod)$coefficients, file=paste(figuresPath,newfilename, sep='/'), sep='\t')
+
+#2) Plot
+#set up prediction dataframes
+df.pred<-XYPlot_DF(n=100, xVar='PC2_neg1', constantVar='PC1', df=df.mod, mod=mod)
+
+#remove the year intercept
+mod.coefs<-coef(mod)$year
+int2012<-mod.coefs[1,1]
+int2013<-mod.coefs[2,1]
+int.Diff<-int2012 - int2013
+df.mod$mv_g.m2_logt.minusYr<-df.mod$mv_g.m2_logt
+df.mod[df.mod$year==2012,'mv_g.m2_logt.minusYr']<-df.mod[df.mod$year==2012,'mv_g.m2_logt'] - int.Diff
+
+#plot
+pScat.Mv_PC2<-ggplot(data=df.pred, 
+                     mapping=aes(x=PC2_neg1, 
+                                 y=ypred.minusYr, 
+                                 ymin=CI.lwr.minusYr, ymax=CI.upr.minusYr))  +  
+  geom_ribbon(alpha=0.4) +
+  geom_line() +
+  mytheme + ylab('Microstegium biomass (log g/m2)') + xlab('PC2*-1\n(increasing light, decreasing trees)') + 
+  geom_point(data=df.mod, aes(y=mv_g.m2_logt.minusYr, ymin=NULL, ymax=NULL))
+pScat.Mv_PC2
+
+#save plot
+newfilename<-'pScat_q3.png'
+png(paste(figuresPath,newfilename, sep='/'), units='in', 
+    width = fig.width*1, height = fig.height*1.05, res=fig.res)
+pScat.Mv_PC2
+dev.off()
+
+```
+
+_________________________________________________________________
+# 4. Q4: What is the relative importance of reference conditions on impact - direct and indirectly
+A. Nitrate model
+```{r q4, echo=FALSE, message=FALSE, warning=FALSE}
+# data.q4<-data.q2
+# 
+# #Identify the nitrate dataframe
+# df<-data.q4
+# diffVarShort<-'noi_T'
+# 
+# PathAnalysis<-function(df, diffVarShort){
+#   
+#   #select the impact variable
+#   select.diffVar<-paste('Diff',diffVarShort, sep='_')
+#   
+#   #make reference ordination
+#   refVars<-refVars[refVars != 'percpar']
+#   select.refVars<-refVars[!refVars %in% diffVarShort]
+#   df.ref<-data.frame(df[,select.refVars], year=df$year)
+#   rownames(df.ref)<-df$plotYear
+#   df.ref.rm<-df.ref[!rowSums(is.na(df.ref)),]
+#   tmp<-df.ref.rm[,!(colnames(df.ref.rm) == 'year')]
+#   tmp.scaled<-scale(tmp)
+#   PCA.ref<-prcomp(tmp.scaled) #same as in q2
+#   
+#   #set up dataframe for path analysis
+#   df.PCA.ref<-data.frame(plotYear=rownames(PCA.ref$x), PCA.ref$x)
+#   df.sub<-data.frame(plotYear=df$plotYear, year=df$year, 
+#                    select.diffVar=df[,select.diffVar], mv_g.m2_logt=df$mv_g.m2_logt)
+#   df.mod<-merge(df.sub, df.PCA.ref[,c(1:3)])
+#   
+#   #path analysis
+#   myModel <- '# direct effects
+#               select.diffVar ~ c1*PC1 + c2*PC2
+# 
+#               #mediator
+#               mv_g.m2_logt ~ a1*PC1 + a2*PC2
+#               select.diffVar ~ b*mv_g.m2_logt
+# 
+#               #indirect effects via PC1
+#               a1b := a1*b
+# 
+#               #indirect effects via PC2
+#               a2b := a2*b
+# 
+#               #indirect effects 
+#               a1a2b := a1*b + a2*b
+# 
+#               #total effects
+#               c1c2a1a2b := c1 + c2 + a1*b + a2*b
+#              '
+# 
+#   fit <- sem(myModel, data=df.mod)
+#   result<-summary(fit)
+#   
+#   return(result)
+# }
+# 
+# PathAnalysis(df=data.q4, diffVarShort = 'noi_T')
+# PathAnalysis(df=data.q4, diffVarShort = 'nitrifd_T')
+# PathAnalysis(df=data.q4, diffVarShort = 'ammonifd_T')
+# PathAnalysis(df=data.q4, diffVarShort = 'minzd_T')
+
+```
+
+_________________________________________________________________
+# Trends over time
+a. Does Microstegium biomass increase over time?
+b. Do soil N pools and fluxes in reference (and invaded) plots shift over time?
+c. Do impact magnitudes shift over time?
+d. Does the influence of reference conditions on Microstegium biomass shift over time?
+
+_________________________________________________________________
+# Invasion front study design
+a. What environmental factors besides soil N pools and fluxes differ among paired invaded and reference plots?
+```{r extra, echo=FALSE, message=FALSE, warning=FALSE}
+
+##############
+#A. Do an ordination of all environmental variable by plot
+##############
+
+#1) Subset and reshape
+data.plotVars<-data.choice[data.choice$variable %in% plotVars, c('plotid','plothalfid1','inv','year','variable','value')]
+data.plotVars$variable<-factor(data.plotVars$variable, levels=plotVars)
+data.plotVars.wide<-dcast(data.plotVars, plothalfid1 + plotid + inv + year ~ variable, value.var='value')
+data.plotVars.wide$plotInvYear<-paste(data.plotVars.wide$plothalfid1, 
+                                      data.plotVars.wide$year, sep="_") #use this to identify rows
+data.plotVars.wide$plotYear<-paste(as.character(data.plotVars.wide$plotid), 
+                                   data.plotVars.wide$year, sep="_") #use this to block by plotid*year
+
+row.names(data.plotVars.wide)<-data.plotVars.wide$plotInvYear
+NonValCols<-c('plothalfid1','plotid','plotInvYear', 'plotYear','inv','year')
+ValCols<-colnames(data.plotVars.wide)[!(colnames(data.plotVars.wide) %in% NonValCols)]
+data.plotVars.wide.rm<-data.plotVars.wide[!rowSums(is.na(data.plotVars.wide))>0,] #remove rows with missing data
+#cor(data.plotVars.wide.rm[,ValCols]) #look at correlation matrix
+
+#2) Ordinate and save plot
+df.ord<-data.plotVars.wide.rm[,ValCols]
+colnames(df.ord)<-plotVarNames
+df.ord.scaled<-scale(df.ord)
+PCA.res<-prcomp(df.ord.scaled)
+data.PCA<-data.frame(plotInvYear=rownames(PCA.res$x), PCA.res$x)
+data.vars.PCA<-merge(data.plotVars.wide.rm, data.PCA[,c(1:3)]) #add Mv biomass to this dataframe
+data.vars.PCA$plotid<-ldply(strsplit(data.vars.PCA$plothalfid1, "_", fixed=TRUE))$V2
+data.vars.PCA$year<-factor(data.vars.PCA$year)
+
+plots<-ggbiplot_q1(pcobj=PCA.res, df=data.vars.PCA)
+plots[['pEllipseIN1']]
+newfilename<-'pPCA_allvars.png'
+png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*2.5, height = fig.height*2, res=fig.res)
+plots[['pEllipseIN1']]
+dev.off()
+
+
+
+
+##############
+#B. Investigate individual relationships using mixed effects models with year+site as a random effect.
+##############
+
+#1) Run models
+Yvars<-plotVars
+YvarNames<-plotVarNames
+df<-data.vars.PCA
+result<-InvEffect(Yvars=Yvars, YvarNames=YvarNames, df=df)
+
+#2) Calculate means and save
+data.vars.PCA.long<-melt(data.vars.PCA, measure.vars=plotVars, id.vars = c('inv','year','plotid'))
+meanSummary<-ddply(data.vars.PCA.long, ~variable+inv, summarize,
+                   mean=mean(value),
+                   n=length(value),
+                   se=sd(value)/sqrt(n))
+meanSummary[,c('mean','se')]<-round(meanSummary[,c('mean','se')], digits=2)
+colnames(meanSummary)[colnames(meanSummary) == 'variable']<-'vars'
+newfilename<-'meanSummary_allvars.txt'
+write.table(meanSummary, file=paste(figuresPath,newfilename, sep='/'), sep='\t')
+
+#3) Save coefficient and anova summary tables
+data.frame(result[['summarySummary']])
+newfilename<-'summarySummary_extra.txt'
+write.table(data.frame(result[['summarySummary']]), file=paste(figuresPath,newfilename, sep='/'), sep='\t')
+#data.frame(result[['posthocSummary']])
+newfilename<-'posthocSummary_extra.txt'
+write.table(data.frame(result[['posthocSummary']]), file=paste(figuresPath,newfilename, sep='/'), sep='\t')
+
+#4) Plot
+#i) prep dataframe and params
+meanSummary.pretty<-merge(meanSummary, plotVars.indx)
+meanSummary.pretty$plotVarNames<-factor(meanSummary.pretty$plotVarNames,levels=plotVarNames)
+meanSummary.pretty$depth<-factor(meanSummary.pretty$depth, levels=depth_order)
+meanSummary.pretty$depth<-mapvalues(meanSummary.pretty$depth, from = depth_order, to = c('0-5cm','5-15cm'))
+meanSummary.pretty$inv<-mapvalues(meanSummary.pretty$inv, from = inv_order, to = invNames)
+limits <- aes(ymax = mean + se, ymin=mean - se)
+
+plotVars.sub<-c('soilmoi_T','soilmoi_B','som_T','som_B','ph_T','ph_B')
+meanSummary.pretty.sub<-subset(meanSummary.pretty, vars %in% plotVars.sub)
+meanSummary.pretty.sub$basicVars<-c(rep('Soil pH',4), 
+                                    rep('Soil moisture (%)',4), 
+                                    rep('Org. Matter (%)',4))
+#ii) facet each soil response variable
+p1<-ggplot(meanSummary.pretty.sub, aes(x=inv, y=mean, linetype=depth, group=depth)) +
+  geom_point(size=3) + ylab('Measurement value') + xlab(NULL) +
+  geom_errorbar(limits, width=0.2) + geom_line() + 
+  facet_wrap(~basicVars, scales='free_y') + mytheme
+
+plotVars.sub<-c('nat_g.m2','litter_g.m2','percpar')
+meanSummary.pretty.sub<-subset(meanSummary.pretty, vars %in% plotVars.sub)
+meanSummary.pretty.sub$plotVarNames<-c(rep('Litter biomass (g/m2)',2), 
+                                       rep('Understory biomass (g/m2)',2), 
+                                       rep('Light avail. (%)',2))
+
+#ii) facet each soil response variable
+p2<-ggplot(meanSummary.pretty.sub, aes(x=inv, y=mean)) +
+  geom_point(size=3) + ylab('Measurement value') + xlab(NULL) +
+  geom_errorbar(limits, width=0.2) + geom_line() + 
+  facet_wrap(~plotVarNames, scales='free_y') + mytheme
+
+
+#iv) put panels together and save
+grid.arrange(p1 + guides(linetype=FALSE),
+             p2,
+             nrow=2)
+newfilename<-'pScat_allvars.png'
+png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*3, height = fig.height*2, res=fig.res)
+grid.arrange(p1+ guides(linetype=FALSE),
+             p2,
+             nrow=2)
+dev.off()
+
+##############
+#D. Identify N variables that increase/decrease across sites.
+##############
+data.frame(result[['posthocSummary']])
+paste('Soil moisture is higher in invaded plots')
+paste('Litter biomass is lower in invaded plots')
+
+```
+
+_________________________________________________________________
+# %AM
+a. Does Microstegium biomass vary with %AM?
+b. Does %AM vary with multivariate soil N conditions in reference plots?
+
+
+
+
+
+
+
+
+

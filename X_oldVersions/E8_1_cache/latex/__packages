@@ -1,0 +1,15 @@
+base
+plyr
+reshape2
+ggplot2
+ggthemes
+gridExtra
+Matrix
+lme4
+lmerTest
+GGally
+scales
+ggbiplot
+permute
+lattice
+vegan
