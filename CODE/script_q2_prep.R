@@ -1,12 +1,14 @@
 #script_q2_prep.R
 
 
+#0. Subset data from data.choice
+data.vars<-data.choice[data.choice$variable %in% useThese_refVars, c('plotid','plothalfid1','inv','year','variable','value')]
+data.vars$variable<-factor(data.vars$variable, levels=useThese_refVars)
+
+
 ##############
 #A. Calculate impact magnitude for each target variable (nitrate, nitrification, ammonification)
 ##############
-data.vars<-data.choice[data.choice$variable %in% vars, c('plotid','plothalfid1','inv','year','variable','value')]
-data.vars$variable<-factor(data.vars$variable, levels=vars)
-
 #reshape dataframe
 data.vars.wideIN <- dcast(data.vars, plotid + year + variable ~ inv, value.var="value")
 #calculate diff
@@ -20,16 +22,13 @@ colnames(data.diffVars.wide)[-c(1:2)]<-paste('Diff', colnames(data.diffVars.wide
 #B. Test the role of reference plot conditions and Microstegium biomass on impacts individually using mixed effects models with year as a random effect
 ##############
 
-#0. Prep dataset
-
 #i) Identify reference plot condition variables
-data.refVars<-data.choice[data.choice$variable %in% useThese_refVars, c('plotid','plothalfid1','inv','year','variable','value')]
-data.refVars$variable<-factor(data.refVars$variable, levels=useThese_refVars)
+data.refVars<-data.vars
 data.refVars<-subset(data.refVars, inv == 'N')
 data.refVars.wide<-dcast(data.refVars, plotid + year ~ variable, value.var='value')
 
 #ii) Identify microstegium biomass
-data.mvVar<-data.choice[data.choice$variable %in% mvVar, c('plotid','plothalfid1','inv','year','variable','value')]
+data.mvVar<-data.choice[data.choice$variable %in% 'mv_g.m2', c('plotid','plothalfid1','inv','year','variable','value')]
 data.mvVar<-subset(data.mvVar, inv == 'I')
 data.mvVar.wide<-dcast(data.mvVar, plotid + year ~ variable, value.var='value')
 pHist.mv<-ggplot(data.mvVar.wide, aes(x=log(mv_g.m2)))+geom_histogram() #log-transform mv biomass to improve normality

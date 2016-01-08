@@ -22,11 +22,11 @@ library(gtable)
 library(gridExtra) #for grid.arrange fxn
 library(lme4) #for mixed-effects models
 library(lmerTest) #for lmer p-values
-library(ggbiplot) #for pretty biplots
 library(vegan) #for adonis fxn to do perMANOVAs
 library(lavaan) #for structural equation modeling
 library(doBy) #the orderBy fxn
 library(merTools)
+#library(bpca) #for 3d plots 
 
 #CUSTOM FUNCTIONS
 source('CODE/fxn_reshapeHelpers.R')
@@ -51,153 +51,13 @@ data.choice<-data_d
 _________________________________________________________________
 # 0. Visualize data
 ```{r visualize, echo=FALSE}
-### soil N pools and fluxes in invaded and reference plots ###
-nVars
-#0) subset and reshape
-variables<-nVars #for QuickReshape1()
-variableNames<-nVarNames #for QuickReshape1()
-reshapeResult<-QuickReshape1(variables, variableNames)
-df.ord<-reshapeResult[['df.ord']]
-data.vars.wide.rm<-reshapeResult[['data.vars.wide.rm']]
-NonValCols<-reshapeResult[['NonValCols']]
-
-#PCA
-df.ord.scaled<-scale(df.ord)
-PCA.res<-prcomp(df.ord.scaled)
-data.PCA<-data.frame(plotInvYear=rownames(PCA.res$x), PCA.res$x)
-data.vars.PCA<-data.PCA[,c(1:3)]
-data.vars.PCA<-merge(data.vars.PCA, data.vars.wide.rm)
-screeplot(PCA.res, type='lines')
-
-
-library("bpca")
-
-
-plots<-ggbiplot_q1(pcobj=PCA.res, df=data.vars.PCA)
-plots[['pEllipseIN1']]
-newfilename<-'PCA_plotNvars.png'
-png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*3, height = fig.height*3, res=fig.res)
-plots[['pEllipseIN1']] + xlim(c(-2.3,4))
-dev.off()
-#variable contributions to PC1 and PC2
-PCvar<-PCA.var.contrib_q1(pca.obj=PCA.res)
-PCvar
-newfilename<-'PCvar_plotNvars.txt'
-write.table(PCvar, file=paste(figuresPath,newfilename, sep='/'), sep='\t')
-
-#NMDS
-df.ord.pos <- apply(df.ord, 2, minShift)
-mod_NMDS<-metaMDS(df.ord.pos, distance='euclidean',
-                  autotransform=FALSE, noshare=FALSE, wascores = TRUE,
-                  k=2) # The number of reduced dimensions
-#NMDS.scree(df.ord.pos,distance='euclidean') #this takes forever
-nmdsResult<-NMDSplots(nmds=mod_NMDS, data.vars.wide.rm=data.vars.wide.rm, NonValCols=NonValCols)
-grid.arrange(nmdsResult[['p']], nmdsResult[['p.vecs']])
-newfilename<-'NMDS_plotNvars.png'
-png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*3.5, height = fig.height*3.5, res=fig.res)
-grid.arrange(nmdsResult[['p']] + xlim(-8,8) + ylim(-4,4) + coord_equal(), 
-             nmdsResult[['p.vecs']] + xlim(-8,8) + ylim(-4,4) + coord_equal())
-dev.off()
-
-#everything measured in invaded and reference plots
-plotVars
-#0) subset and reshape
-variables<-plotVars #for QuickReshape1()
-variableNames<-plotVarNames #for QuickReshape1()
-reshapeResult<-QuickReshape1(variables, variableNames)
-df.ord<-reshapeResult[['df.ord']]
-data.vars.wide.rm<-reshapeResult[['data.vars.wide.rm']]
-NonValCols<-reshapeResult[['NonValCols']]
-
-#PCA
-df.ord.scaled<-scale(df.ord)
-PCA.res<-prcomp(df.ord.scaled)
-data.PCA<-data.frame(plotInvYear=rownames(PCA.res$x), PCA.res$x)
-data.vars.PCA<-data.PCA[,c(1:3)]
-data.vars.PCA<-merge(data.vars.PCA, data.vars.wide.rm)
-plots<-ggbiplot_q1(pcobj=PCA.res, df=data.vars.PCA)
-plots[['pEllipseIN1']]
-newfilename<-'PCA_plotallVars.png'
-png(paste(figuresPath,newfilename, sep='/'), units='in', 
-    width = fig.width*2.5, height = fig.height*2, res=fig.res)
-plots[['pEllipseIN1']] 
-dev.off()
-#variable contributions to PC1 and PC2
-PCvar<-PCA.var.contrib_q1(pca.obj=PCA.res)
-PCvar
-newfilename<-'PCvar_plotallVars.txt'
-write.table(PCvar, file=paste(figuresPath,newfilename, sep='/'), sep='\t')
-
-#NMDS
-df.ord.pos <- apply(df.ord, 2, minShift)
-mod_NMDS<-metaMDS(df.ord.pos, distance='euclidean',
-                  autotransform=FALSE, noshare=FALSE, wascores = TRUE,
-                  k=2) # The number of reduced dimensions
-nmdsResult<-NMDSplots(nmds=mod_NMDS, data.vars.wide.rm=data.vars.wide.rm,
-                      NonValCols=NonValCols)
-nmdsResult[['p']]
-grid.arrange(nmdsResult[['p']] + xlim(-2000,1500) + ylim(-300, 100),
-             nmdsResult[['p.vecs']] + xlim(-2000,1500) + ylim(-300, 100))
-
-newfilename<-'NMDS_plotallVars.png'
-png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*3, height = fig.height*3, res=fig.res)
-grid.arrange(nmdsResult[['p']], nmdsResult[['p.vecs']])
-dev.off()
-
-#everything measured in reference plots only
-allVars
-#0) subset and reshape
-variables<-allVars #for QuickReshape1()
-variableNames<-allVarNames #for QuickReshape1()
-reshapeResult<-QuickReshape1(variables, variableNames,refOnly='y')
-
-
-df.ord<-reshapeResult[['df.ord']]
-data.vars.wide.rm<-reshapeResult[['data.vars.wide.rm']]
-NonValCols<-reshapeResult[['NonValCols']]
-
-#PCA
-df.ord.scaled<-scale(df.ord)
-PCA.res<-prcomp(df.ord.scaled)
-data.PCA<-data.frame(plotInvYear=rownames(PCA.res$x), PCA.res$x)
-data.vars.PCA<-data.PCA[,c(1:3)]
-data.vars.PCA<-merge(data.vars.PCA, data.vars.wide.rm)
-plots<-ggbiplot_q3(pcobj=PCA.res, df=data.vars.PCA)
-plots[['pBasic']]
-newfilename<-'PCA_plotrefVars.png'
-png(paste(figuresPath,newfilename, sep='/'), units='in', 
-    width = fig.width*2.5, height = fig.height*2, res=fig.res)
-plots[['pBasic']]
-dev.off()
-#variable contributions to PC1 and PC2
-PCvar<-PCA.var.contrib_q1(pca.obj=PCA.res)
-PCvar
-newfilename<-'PCvar_plotrefVars.txt'
-write.table(PCvar, file=paste(figuresPath,newfilename, sep='/'), sep='\t')
-
-#NMDS
-df.ord.pos <- apply(df.ord, 2, minShift)
-nmds<-metaMDS(df.ord.pos, distance='euclidean',
-                  autotransform=FALSE, noshare=FALSE, wascores = TRUE,
-                  k=2) # The number of reduced dimensions
-#extract scores
-variableScores <- data.frame(id=rownames(nmds$species), nmds$species)
-variableScores$angle <- with(variableScores, (180/pi) * atan(MDS2 / MDS1))
-variableScores$hjust <- with(variableScores, (1 - 1.1 * sign(MDS1)) / 2)
-sampleScores <- data.frame(id=row.names(nmds$points), data.vars.wide.rm[,NonValCols], nmds$points)
-p<-ggplot(sampleScores, aes(x=MDS1, y=MDS2)) + 
-    geom_point(color='darkgray') + 
-    geom_segment(mapping=aes(x=0, y=0, xend=MDS1, yend=MDS2), 
-                 data=variableScores, arrow = arrow(length = unit(0.5, "cm")), color=1) +
-    geom_text(mapping=aes(x=MDS1, y=MDS2, label=id, angle = angle, hjust = hjust), 
-              data=variableScores, color=1, size=3) +
-    mytheme
-p
-newfilename<-'NMDS_refVars.png'
-png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*3, height = fig.height*3, res=fig.res)
-p
-dev.off()
-
+source('CODE/script_visualize.R')
+#saves the following plots:
+#plot N variables - NMDS, PCA x plot points, site vectors
+#all plot variables - NMDS, PCA x plot points, site vectors
+#reference plot and site variables - NMDS, PCA
+#saves the following tables:
+#PCA loadings for plot N variables, all plot variablers, reference plot and site variables
 ```
 
 _________________________________________________________________
@@ -205,15 +65,12 @@ _________________________________________________________________
 A. Do an ordination of soil N pools and fluxes and test the role of invasion status with permMANOVA
 B. Investigate individual relationships using mixed effects models with year+site as a random effect and identify N variables that increase/decrease across sites.
 ```{r q1, echo=FALSE, message=FALSE, warning=FALSE}
-vars #variables in the ordination
-source('CODE/script_q1.R')
+nVars #variables in the analyses
 
-#A. Ordination
-#saves plot 'pPCA_q1.png' #ordination of soil N pools and fluxes by plot
-#saves plot 'pPCA_q1_nmds.png' #ordination of soil N pools and fluxes by plot
-#saves table 'PCvar_q1.txt' #loadings of soil N pools and fluxes onto ordination PCs
+source('CODE/script_q1A.R')
 #saves table 'permMANOVA_q1.txt' #result of permMANOVA of the ordination given plot invasion status
 
+source('CODE/script_q1B.R')
 #B. Mixed effects models (soil N pool or flux value ~ inv + (1|siteYear))
 #saves table 'meanSummary_q1.txt' #summary of individual soil N pools and fluxes by year and invasion status
 #saves table 'summarySummary_q1.txt' #summary of individual mixed effect models for each soil N pool or flux
@@ -232,11 +89,11 @@ B. Test the role of reference plot conditions and Microstegium biomass on impact
 diffVars<-c('noi_T','noi_B','ammonifd_T','ammonifd_B','nitrifd_T','nitrifd_B','minzd_T','minzd_B')
 
 #2. decide on what variables to include in the reference ordination
-#refVars
-#refVars2 #without PercBA_AM
-#refVars.AggPAR
-#refVars2.AggPAR #without PercBA_AM
-useThese_refVars<-refVars
+allVars
+#allVars2 #without PercBA_AM
+#allVars.AggPAR
+#allVars2.AggPAR #without PercBA_AM
+useThese_refVars<-allVars
 
 #3. decide whether to include PercBA_AM as a separate parameter
 #externalPercBA_AM<-'y'
@@ -261,6 +118,143 @@ source('CODE/script_q2.R')
 PC1var.c.o
 PC2var.c.o
 mod.df[mod.df$pval<0.05,]
+
+#look at other models
+
+#reshape data.choice
+data.T<-subset(data.choice, depth == 'T')
+data.T1<-data.choice[data.choice$variable %in% c(allVars,'mv_g.m2'), 
+                          c('plotid','plothalfid1','inv','year','variable','value')]
+data.T1$variable<-factor(data.T1$variable, levels=c(allVars,'mv_g.m2'))
+data.T1.wide<-dcast(data.T1, plotid + year ~ variable + inv, value.var='value')
+df<-data.T1.wide
+
+#nitrate
+#reference
+mod<-lmer(noi_T_N ~ nTrees_N + nitrifd_T_N + ph_T_N + soilmoi_T_N +
+             (1|year), data=df)
+summary(mod)
+mod<-lmer(nitrifd_T_N ~ nTrees_N +
+             (1|year), data=df)
+summary(mod)
+mod<-lmer(ph_T_N ~ nTrees_N +
+             (1|year), data=df)
+summary(mod)
+mod<-lmer(soilmoi_T_N ~ nTrees_N + litter_g.m2_N +
+             (1|year), data=df)
+summary(mod)
+mod<-lmer(litter_g.m2_N ~ nTrees_N +
+             (1|year), data=df)
+summary(mod)
+#invaded
+mod<-lmer(noi_T_I ~ nTrees_N + nitrifd_T_I + ph_T_I + soilmoi_T_I + mv_g.m2_I +
+             (1|year), data=df)
+summary(mod)
+mod<-lmer(nitrifd_T_I ~ nTrees_N + mv_g.m2_I +
+             (1|year), data=df)
+summary(mod)
+mod<-lmer(ph_T_I ~ nTrees_N + mv_g.m2_I +
+             (1|year), data=df)
+summary(mod)
+mod<-lmer(soilmoi_T_I ~ nTrees_N + litter_g.m2_I + mv_g.m2_I +
+             (1|year), data=df)
+summary(mod)
+mod<-lmer(litter_g.m2_I ~ nTrees_N + mv_g.m2_I +
+             (1|year), data=df)
+summary(mod)
+## mv biomass
+df$mv_g.m2_I_logt<-log(df$mv_g.m2_I+0.01)
+mod<-lmer(mv_g.m2_I_logt ~ nTrees_N + noi_T_N + nitrifd_T_N + ph_T_N + soilmoi_T_N + litter_g.m2_N +
+             (1|year), data=df)
+summary(mod)
+
+#ammonification
+#reference
+mod<-lmer(ammonifd_T_N ~ nTrees_N + nhi_T_N + som_T_N + ph_T_N + soilmoi_T_N +
+             (1|year), data=df)
+summary(mod)
+mod<-lmer(nhi_T_N ~ nTrees_N +
+             (1|year), data=df)
+summary(mod)
+mod<-lmer(som_T_N ~ nTrees_N +
+             (1|year), data=df)
+summary(mod)
+mod<-lmer(ph_T_N ~ nTrees_N +
+             (1|year), data=df)
+summary(mod)
+mod<-lmer(soilmoi_T_N ~ nTrees_N + litter_g.m2_N +
+             (1|year), data=df)
+summary(mod)
+mod<-lmer(litter_g.m2_N ~ nTrees_N +
+             (1|year), data=df)
+summary(mod)
+#invaded
+mod<-lmer(ammonifd_T_I ~ nTrees_N + nhi_T_I + som_T_I + ph_T_I + soilmoi_T_I + mv_g.m2_I +
+             (1|year), data=df)
+summary(mod)
+mod<-lmer(nhi_T_N ~ nTrees_N +mv_g.m2_I +
+             (1|year), data=df)
+summary(mod)
+mod<-lmer(som_T_N ~ nTrees_N +mv_g.m2_I +
+             (1|year), data=df)
+summary(mod)
+mod<-lmer(ph_T_N ~ nTrees_N +mv_g.m2_I +
+             (1|year), data=df)
+summary(mod)
+mod<-lmer(soilmoi_T_N ~ nTrees_N + litter_g.m2_N + mv_g.m2_I +
+             (1|year), data=df)
+summary(mod)
+mod<-lmer(litter_g.m2_N ~ nTrees_N + mv_g.m2_I +
+             (1|year), data=df)
+summary(mod)
+#Mv biomass
+mod<-lmer(mv_g.m2_I_logt ~ nTrees_N + ammonifd_T_N + nhi_T_N + som_T_N + 
+            soilmoi_T_N + litter_g.m2_N +
+             (1|year), data=df)
+summary(mod)
+
+
+
+#nitrate
+modT<-lmer(noi_T ~ mv_g.m2_logt +  nTrees + litter_g.m2 +
+             mv_g.m2_logt:nTrees + mv_g.m2_logt:litter_g.m2 + 
+             (1|year), data=data.q2)
+summary(modT)
+meanVal<-mean(data.q2$litter_g.m2)
+data.q2$litterBin<-'Low litter'
+data.q2[data.q2$litter_g.m2>meanVal,'litterBin']<-'High litter'
+data.q2$litterBin<-factor(data.q2$litterBin, levels=c('Low litter','High litter'))
+ggplot(data.q2, aes(x=mv_g.m2_logt, y=noi_T)) + 
+  geom_point() + facet_grid(~litterBin)
+
+modB<-lmer(noi_B ~ mv_g.m2_logt +  nTrees + litter_g.m2 + 
+             mv_g.m2_logt:nTrees + mv_g.m2_logt:litter_g.m2 + 
+             (1|year), data=data.q2)
+summary(modB)
+meanVal<-mean(data.q2$litter_g.m2)
+data.q2$litterBin<-'Low litter'
+data.q2[data.q2$litter_g.m2>meanVal,'litterBin']<-'High litter'
+data.q2$litterBin<-factor(data.q2$litterBin, levels=c('Low litter','High litter'))
+ggplot(data.q2, aes(x=mv_g.m2_logt, y=noi_B)) + 
+  geom_point() + facet_grid(~litterBin) 
+
+
+#ammonification
+modT<-lmer(ammonifd_T ~ mv_g.m2_logt + soilmoi_T + 
+              mv_g.m2_logt:soilmoi_T +
+             (1|year), data=data.q2)
+summary(modT)
+meanVal<-mean(data.q2$soilmoi_T)
+data.q2$soilmoiBin<-'Low moisture'
+data.q2[data.q2$soilmoi_T>meanVal,'soilmoiBin']<-'High moisture'
+data.q2$soilmoiBin<-factor(data.q2$soilmoiBin, levels=c('Low moisture','High moisture'))
+ggplot(data.q2, aes(x=mv_g.m2_logt, y=ammonifd_T, size=soilmoi_T)) + 
+  geom_point() + facet_grid(~soilmoiBin) + geom_smooth(method='lm')
+
+modT<-lmer(ammonifd_T ~ mv_g.m2_logt + soilmoi_T + PercBA_AM + 
+              mv_g.m2_logt:soilmoi_T + PercBA_AM:soilmoi_T + mv_g.m2_logt:PercBA_AM +
+             (1|year), data=data.q2)
+summary(modT)
 
 #3. make plots
 
@@ -401,7 +395,7 @@ B. Investigate relationship between PC scores and Microstegium biomass using mix
 #A. Do an ordination of reference conditions and test the relationship between Microstegium biomass and reference conditions using permMANOVA.
 
 #i) Identify reference plot condition variables
-useThese_refVars<-refVars
+useThese_refVars<-allVars
 data.refVars<-data.choice[data.choice$variable %in% useThese_refVars, c('plotid','plothalfid1','inv','year','variable','value')]
 data.refVars$variable<-factor(data.refVars$variable, levels=useThese_refVars)
 data.refVars<-subset(data.refVars, inv == 'N')
@@ -414,51 +408,20 @@ data.q3.rm<-data.q3[!rowSums(is.na(data.q3))>0,]
 tmp<-data.q3.rm[,useThese_refVars]
 colnames(tmp)<-useThese_refVars
 #cor(tmp) #look at correlation matrix
-
-#PCA
 row.names(tmp)<-data.q3.rm$plotYear
 tmp.scaled<-scale(tmp)
 PCA.res<-prcomp(tmp.scaled)
-pPCA_q3<-ggbiplot_q3(pcobj=PCA.res, df=data.q3.rm)
-pPCA_q3[['pBasic']]
-#save plot
-newfilename<-'pPCA_q3.png'
-png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*2.5, height = fig.height*2, res=fig.res)
-pPCA_q3[['pBasic']]
-dev.off()
-#variable contributions to PC1 and PC2
-PCvar<-PCA.var.contrib_q1(pca.obj=PCA.res)
-PCvar
-newfilename<-'PCvar_q3.txt'
-write.table(PCvar, file=paste(figuresPath,newfilename, sep='/'), sep='\t')
-#make dataframe
+pPCA_q3<-ggbiplot_custom(pcobj=PCA.res, df=data.q3.rm) #saved in 'script_visualize.R'
+pPCA_q3
 df.PCA<-data.frame(plotYear=row.names(PCA.res$x), PCA.res$x)
-data.q3.PCA<-merge(data.q3.rm, df.PCA[,c(1:3)])
 
-#NMDS
-#make all the values positive for NMDS
-minShift <- function(x) {x + abs(min(x))}
-df.ord.pos <- apply(tmp, 2, minShift)
-mod_NMDS<-metaMDS(df.ord.pos, 
-                  distance='euclidean',
-                  autotransform=FALSE, noshare=FALSE, wascores = TRUE,
-                  k=2) # The number of reduced dimensions
-variableScores <- data.frame(id=rownames(mod_NMDS$species), mod_NMDS$species)
-variableScores$angle <- with(variableScores, (180/pi) * atan(MDS2 / MDS1))
-variableScores$hjust <- with(variableScores, (1 - 1.1 * sign(MDS1)) / 2)
-sampleScores <- data.frame(id=row.names(mod_NMDS$points),
-                           mod_NMDS$points)
-p<-ggplot(sampleScores, aes(x=MDS1, y=MDS2)) + geom_point(color='darkgray', shape=1) +
-  geom_segment(mapping=aes(x=0, y=0, xend=MDS1, yend=MDS2), data=variableScores, arrow = arrow(length = unit(0.5, "cm")), color=1) +
-  geom_text(mapping=aes(x=MDS1, y=MDS2, label=id, angle = angle, hjust = hjust), data=variableScores, color=1, size=3) +
-  mytheme + coord_equal() + ylim(-500,500)
-newfilename<-'pPCA_q3_nmds.png'
-png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*3, height = fig.height, res=fig.res)
-p
-dev.off()
+#add Mv biomass to dataset
+colnames(data.mvVar.wide) #from 'script_q2_prep.R'
+data.mvVar.wide$plotYear<-paste(data.mvVar.wide$plotid, data.mvVar.wide$year, sep="_")
+data.q3.PCA<-merge(data.mvVar.wide, df.PCA[,c(1:3)])
 
 #3) Do reference area and plot characteristics explain variation in Mv biomass? - perMANOVA on mv biomass
-perMANOVA<-adonis(tmp.scaled ~ mv_g.m2_logt, data = data.q3.PCA, method='eu')
+perMANOVA<-adonis(tmp.scaled ~ mv_g.m2, data = data.q3.PCA, method='eu')
 aov.tab.permanova<-data.frame(perMANOVA$aov.tab)
 aov.tab.permanova
 #save anova table
@@ -527,66 +490,93 @@ dev.off()
 
 _________________________________________________________________
 # 4. Q4: What is the relative importance of reference conditions on impact - direct and indirectly
-A. Nitrate model
 ```{r q4, echo=FALSE, message=FALSE, warning=FALSE}
-# data.q4<-data.q2
-# 
-# #Identify the nitrate dataframe
-# df<-data.q4
-# diffVarShort<-'noi_T'
-# 
-# PathAnalysis<-function(df, diffVarShort){
-#   
-#   #select the impact variable
-#   select.diffVar<-paste('Diff',diffVarShort, sep='_')
-#   
-#   #make reference ordination
-#   refVars<-refVars[refVars != 'percpar']
-#   select.refVars<-refVars[!refVars %in% diffVarShort]
-#   df.ref<-data.frame(df[,select.refVars], year=df$year)
-#   rownames(df.ref)<-df$plotYear
-#   df.ref.rm<-df.ref[!rowSums(is.na(df.ref)),]
-#   tmp<-df.ref.rm[,!(colnames(df.ref.rm) == 'year')]
-#   tmp.scaled<-scale(tmp)
-#   PCA.ref<-prcomp(tmp.scaled) #same as in q2
-#   
-#   #set up dataframe for path analysis
-#   df.PCA.ref<-data.frame(plotYear=rownames(PCA.ref$x), PCA.ref$x)
-#   df.sub<-data.frame(plotYear=df$plotYear, year=df$year, 
-#                    select.diffVar=df[,select.diffVar], mv_g.m2_logt=df$mv_g.m2_logt)
-#   df.mod<-merge(df.sub, df.PCA.ref[,c(1:3)])
-#   
-#   #path analysis
-#   myModel <- '# direct effects
-#               select.diffVar ~ c1*PC1 + c2*PC2
-# 
-#               #mediator
-#               mv_g.m2_logt ~ a1*PC1 + a2*PC2
-#               select.diffVar ~ b*mv_g.m2_logt
-# 
-#               #indirect effects via PC1
-#               a1b := a1*b
-# 
-#               #indirect effects via PC2
-#               a2b := a2*b
-# 
-#               #indirect effects 
-#               a1a2b := a1*b + a2*b
-# 
-#               #total effects
-#               c1c2a1a2b := c1 + c2 + a1*b + a2*b
-#              '
-# 
-#   fit <- sem(myModel, data=df.mod)
-#   result<-summary(fit)
-#   
-#   return(result)
-# }
-# 
-# PathAnalysis(df=data.q4, diffVarShort = 'noi_T')
-# PathAnalysis(df=data.q4, diffVarShort = 'nitrifd_T')
-# PathAnalysis(df=data.q4, diffVarShort = 'ammonifd_T')
-# PathAnalysis(df=data.q4, diffVarShort = 'minzd_T')
+
+#Model 1
+#1. prep dataframe
+df.mod<-mod.ammonifd[['df.mod.used']]
+df.full<-merge(df.mod, data.q2)
+diffVarShort<-'ammonifd_T'
+select.diffVar<-paste('Diff',diffVarShort, sep='_')
+selectCols<-c('plotYear','year','mv_g.m2_logt',select.diffVar,'PC1','PC2')
+df<-df.full[,selectCols]
+colnames(df)
+colnames(df)<-c('plotYear','year','mv','impact','PC1','PC2')
+
+#2. look at dataset
+pairs(df)
+
+#3. load libraries
+library(car) #Anova()
+library(QuantPsyc) #lm.beta()
+
+#4.SEM
+#a. fit the pieces
+Mv_LM<-lm(mv ~ PC1 + PC2, data=df)
+Imp_LM<-lm(impact ~ mv + PC1 + PC2, data=df)
+
+#b. evaluate the pieces
+Anova(Mv_LM) #PC2 is signif
+Anova(Imp_LM) #Mv is signif
+
+#c. standardized coefficients & r^2
+lm.beta(Mv_LM) 
+lm.beta(Imp_LM)
+summary(Mv_LM)$r.squared
+summary(Imp_LM)$r.squared
+
+library(semPlot)
+semPaths(Mv_LM+Imp_LM, layout="tree", "std", intercepts=FALSE)
+
+
+########
+
+#Model 2
+
+#1. prep dataframe
+allVars
+
+variables<-allVars
+
+data.vars<-data.choice[data.choice$variable %in% variables, c('plotid','plothalfid1','inv','year','variable','value')]
+
+data.vars$variable<-factor(data.vars$variable, levels=variables)
+data.vars.wide<-dcast(data.vars, plothalfid1 + plotid + inv+ year ~ variable, value.var='value')
+View(data.vars.wide)
+
+data.vars.wide$plotInvYear<-paste(data.vars.wide$plothalfid1, data.vars.wide$year, sep="_") #use this to identify rows
+data.vars.wide$plotYear<-paste(data.vars.wide$plotid, data.vars.wide$year, sep="_") #use this to block by plotid*year
+row.names(data.vars.wide)<-data.vars.wide$plotInvYear
+
+NonValCols<-c('plothalfid1','plotid','plotInvYear', 'plotYear','inv','year')
+ValCols<-colnames(data.vars.wide)[!(colnames(data.vars.wide) %in% NonValCols)]
+  
+  if(refOnly=='y'){
+    data.vars.wide<-data.vars.wide[data.vars.wide$inv=='N',]
+  }
+
+  data.vars.wide.rm<-data.vars.wide[!rowSums(is.na(data.vars.wide))>0,] #remove rows with missing data
+  df.ord<-data.vars.wide.rm[,ValCols]
+  colnames(df.ord)<-variableNames
+  
+  corel<-cor(data.vars.wide.rm[,ValCols]) #look at correlation matrix
+  
+  results<-list(df.ord=df.ord, corel=corel, 
+                NonValCols=NonValCols, ValCols=ValCols, 
+                data.vars.wide.rm=data.vars.wide.rm)
+
+
+
+
+
+
+
+
+
+#2. look at dataset
+pairs(df)
+
+
 
 ```
 
@@ -603,10 +593,15 @@ a. What environmental factors besides soil N pools and fluxes differ among paire
 ```{r extra, echo=FALSE, message=FALSE, warning=FALSE}
 
 ##############
-#A. Do an ordination of all environmental variable by plot
+#A. Do an ordination of all environmental variables by plot - this is already in 'script_visualize.R'
 ##############
 
-#1) Subset and reshape]
+
+##############
+#B. Investigate individual relationships using mixed effects models with year+site as a random effect.
+##############
+
+#0) set up dataframe
 plotVars
 data.plotVars<-data.choice[data.choice$variable %in% plotVars, c('plotid','plothalfid1','inv','year','variable','value')]
 data.plotVars$variable<-factor(data.plotVars$variable, levels=plotVars)
@@ -616,251 +611,62 @@ data.plotVars.wide$plotInvYear<-paste(data.plotVars.wide$plothalfid1,
 data.plotVars.wide$plotYear<-paste(as.character(data.plotVars.wide$plotid), 
                                    data.plotVars.wide$year, sep="_") #use this to block by plotid*year
 
-row.names(data.plotVars.wide)<-data.plotVars.wide$plotInvYear
-NonValCols<-c('plothalfid1','plotid','plotInvYear', 'plotYear','inv','year')
-ValCols<-colnames(data.plotVars.wide)[!(colnames(data.plotVars.wide) %in% NonValCols)]
-data.plotVars.wide.rm<-data.plotVars.wide[!rowSums(is.na(data.plotVars.wide))>0,] #remove rows with missing data
-#cor(data.plotVars.wide.rm[,ValCols]) #look at correlation matrix
-
-#2) Ordinate and save plot
-df.ord<-data.plotVars.wide.rm[,ValCols]
-colnames(df.ord)<-plotVarNames
-
-#PCA
-df.ord.scaled<-scale(df.ord)
-PCA.res<-prcomp(df.ord.scaled)
-data.PCA<-data.frame(plotInvYear=rownames(PCA.res$x), PCA.res$x)
-data.vars.PCA<-merge(data.plotVars.wide.rm, data.PCA[,c(1:3)]) #add Mv biomass to this dataframe
-data.vars.PCA$plotid<-ldply(strsplit(data.vars.PCA$plothalfid1, "_", fixed=TRUE))$V2
-data.vars.PCA$year<-factor(data.vars.PCA$year)
-plots<-ggbiplot_q1(pcobj=PCA.res, df=data.vars.PCA)
-plots[['pEllipseIN1']]
-newfilename<-'pPCA_allvars.png'
-png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*2.5, height = fig.height*2, res=fig.res)
-plots[['pEllipseIN1']]
-dev.off()
-
-#NMDS
-#make all the values positive for NMDS
-minShift <- function(x) {x + abs(min(x))}
-df.ord.pos <- apply(df.ord, 2, minShift)
-mod_NMDS<-metaMDS(df.ord.pos, 
-                  distance='euclidean',
-                  autotransform=FALSE, noshare=FALSE, wascores = TRUE,
-                  k=2, trymax =50) # The number of reduced dimensions
-mod_NMDS
-stressplot(mod_NMDS)
-goodness(mod_NMDS)
-
-plot (mod_NMDS, display = 'sites', type = 't', main = 'Goodness of fit') # this function draws NMDS ordination diagram with sites
-points (mod_NMDS, display = 'sites', cex = goodness (mod_NMDS)*200) # and this adds the points with size reflecting goodness of fit (bigger = worse fit)
-
-
-variableScores <- data.frame(id=rownames(mod_NMDS$species), mod_NMDS$species)
-variableScores$angle <- with(variableScores, (180/pi) * atan(MDS2 / MDS1))
-variableScores$hjust <- with(variableScores, (1 - 1.1 * sign(MDS1)) / 2)
-sampleScores <- data.frame(id=row.names(mod_NMDS$points),
-                           data.plotVars.wide.rm[,NonValCols],
-                           mod_NMDS$points)
-
-sampleScores.m<-melt(sampleScores, measure.vars=c('MDS1','MDS2'))
-sampleScores.c<-dcast(sampleScores.m, plotYear~inv+variable)
-sampleScores.c
-ord<-ordiellipse(mod_NMDS, sampleScores$inv, display = "sites", 
-                 kind = "se", conf = 0.95, label = T)
-veganCovEllipse<-function (cov, center = c(0, 0), scale = 1, npoints = 100) 
-{
-  theta <- (0:npoints) * 2 * pi/npoints
-  Circle <- cbind(cos(theta), sin(theta))
-  t(center + scale * t(Circle %*% chol(cov)))
-}
-df_ell <- data.frame()
-for(g in unique(sampleScores$inv)){
-  df_ell <- rbind(df_ell, 
-                  cbind(as.data.frame(with(sampleScores[sampleScores$inv==g,],
-                                           veganCovEllipse(ord[[g]]$cov,ord[[g]]$center,ord[[g]]$scale)))
-                        ,inv=g))
-}
-NMDS.mean<-aggregate(sampleScores[,c('MDS1', 'MDS2')],list(inv=sampleScores$inv),mean)
-
-p<-ggplot(sampleScores, aes(x=MDS1, y=MDS2)) + 
-  geom_point(aes(shape=inv), color='darkgray') + 
-  geom_path(data=df_ell, aes(x=NMDS1, y=NMDS2, linetype=inv), size=0.5, color='blue') +
-  geom_segment(mapping=aes(x=0, y=0, xend=MDS1, yend=MDS2), 
-               data=variableScores, arrow = arrow(length = unit(0.5, "cm")), color=1) +
-  geom_text(mapping=aes(x=MDS1, y=MDS2, label=id, angle = angle, hjust = hjust), 
-            data=variableScores, color=1, size=3) +
-  mytheme + xlim(-2350,1500) + ylim(-210,50) +
-  scale_shape_manual(name='Plot type', values=c(16,1), labels=c('Invaded','Reference'))+
-  scale_linetype_manual(name='Plot type', values=c(1,2), labels=c('Invaded','Reference'))
-p
-
-#add site information
-siteVars<-c('PercBA_AM','nTrees','BA_total','mv_g.m2')
-data.siteVars<-data.choice[data.choice$variable %in% siteVars, c('plotid','inv','year','variable','value')]
-data.siteVars$variable<-factor(data.siteVars$variable, levels=siteVars)
-data.siteVars.wide<-dcast(data.siteVars, plotid + inv + year ~ variable, value.var='value')
-data.siteVars.wide$plotYear<-paste(as.character(data.siteVars.wide$plotid), 
-                                   data.siteVars.wide$year, sep="_") #use this to block by plotid*year
-data.siteVars.wide1<-data.siteVars.wide[data.siteVars.wide$inv=='I',]
-data.merge<-merge(sampleScores.c, data.siteVars.wide1)
-data.merge$PercBA_AM_bin<-'ECM dominated'
-data.merge[data.merge$PercBA_AM>50,'PercBA_AM_bin']<-'AM dominated'
-mean_nTrees<-mean(data.merge$nTrees)
-data.merge$nTrees_bin<-'Few trees'
-data.merge[data.merge$nTrees>mean_nTrees,'nTrees_bin']<-'Many trees'
-mean_BA_total<-mean(data.merge$BA_total)
-data.merge$BA_total_bin<-'Low basal area'
-data.merge[data.merge$BA_total>mean_BA_total,'BA_total_bin']<-'High basal area'
-mean_mv<-mean(data.merge$mv_g.m2)
-data.merge$mv_bin<-'Low Mv'
-data.merge[data.merge$mv_g.m2>mean_mv,'mv_bin']<-'High Mv'
-
-#without site info
-p.vecs<-ggplot(sampleScores, aes(x=MDS1, y=MDS2)) + 
-  geom_segment(mapping=aes(x=N_MDS1, y=N_MDS2, xend=I_MDS1, yend=I_MDS2), 
-               data=data.merge, arrow = arrow(length = unit(0.25, "cm")), color='darkgray') +
-  geom_path(data=df_ell, aes(x=NMDS1, y=NMDS2, linetype=inv), size=0.5, color='blue') +
-  
-  geom_segment(mapping=aes(x=0, y=0, xend=MDS1, yend=MDS2), 
-               data=variableScores, arrow = arrow(length = unit(0.5, "cm")), color=1) +
-  geom_text(mapping=aes(x=MDS1, y=MDS2, label=id, angle = angle, hjust = hjust), 
-            data=variableScores, color=1, size=3) + 
-  mytheme + xlim(-2350,1500) + ylim(-210,50) +
-  scale_shape_manual(name='Plot type', values=c(16,1), labels=c('Invaded','Reference'))+
-  scale_linetype_manual(name='Plot type', values=c(1,2), labels=c('Invaded','Reference'))
-p.vecs  
-
-#with site info -- MV
-p.vecs.Mv<-ggplot(sampleScores, aes(x=MDS1, y=MDS2)) + 
-  geom_segment(mapping=aes(x=N_MDS1, y=N_MDS2, xend=I_MDS1, yend=I_MDS2, color=mv_bin), 
-               data=data.merge, arrow = arrow(length = unit(0.25, "cm"))) +
-  geom_segment(mapping=aes(x=0, y=0, xend=MDS1, yend=MDS2), 
-               data=variableScores, arrow = arrow(length = unit(0.5, "cm")), color=1) +
-  geom_text(mapping=aes(x=MDS1, y=MDS2, label=id, angle = angle, hjust = hjust), 
-            data=variableScores, color=1, size=3) + 
-  mytheme + xlim(-2350,1500) + ylim(-210,50) +
-  scale_shape_manual(name='Plot type', values=c(16,1), labels=c('Invaded','Reference'))+
-  scale_linetype_manual(name='Plot type', values=c(1,2), labels=c('Invaded','Reference'))
-p.vecs.Mv
-
-#with site info -- nTrees
-p.vecs.nTrees<-ggplot(sampleScores, aes(x=MDS1, y=MDS2)) + 
-  geom_segment(mapping=aes(x=N_MDS1, y=N_MDS2, xend=I_MDS1, yend=I_MDS2, color=nTrees_bin), 
-               data=data.merge, arrow = arrow(length = unit(0.25, "cm"))) +
-  geom_segment(mapping=aes(x=0, y=0, xend=MDS1, yend=MDS2), 
-               data=variableScores, arrow = arrow(length = unit(0.5, "cm")), color=1) +
-  geom_text(mapping=aes(x=MDS1, y=MDS2, label=id, angle = angle, hjust = hjust), 
-            data=variableScores, color=1, size=3) + 
-  mytheme + xlim(-2350,1500) + ylim(-210,50) +
-  scale_shape_manual(name='Plot type', values=c(16,1), labels=c('Invaded','Reference'))+
-  scale_linetype_manual(name='Plot type', values=c(1,2), labels=c('Invaded','Reference'))
-p.vecs.nTrees
-
-#with site info -- PercBA_AM
-p.vecs.AM<-ggplot(sampleScores, aes(x=MDS1, y=MDS2)) + 
-  geom_segment(mapping=aes(x=N_MDS1, y=N_MDS2, xend=I_MDS1, yend=I_MDS2, color=PercBA_AM_bin), 
-               data=data.merge, arrow = arrow(length = unit(0.25, "cm"))) +
-  geom_segment(mapping=aes(x=0, y=0, xend=MDS1, yend=MDS2), 
-               data=variableScores, arrow = arrow(length = unit(0.5, "cm")), color=1) +
-  geom_text(mapping=aes(x=MDS1, y=MDS2, label=id, angle = angle, hjust = hjust), 
-            data=variableScores, color=1, size=3) + 
-  mytheme + xlim(-2350,1500) + ylim(-210,50) +
-  scale_shape_manual(name='Plot type', values=c(16,1), labels=c('Invaded','Reference'))+
-  scale_linetype_manual(name='Plot type', values=c(1,2), labels=c('Invaded','Reference'))
-p.vecs.AM
-
-newfilename<-'pPCA_allvars_nmds.png'
-png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*3, height = fig.height*3, res=fig.res)
-grid.arrange(p, p.vecs)
-dev.off()
-
-newfilename<-'pPCA_allvars_nmds_siteInfo.png'
-png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*3, height = fig.height*5, res=fig.res)
-grid.arrange(p.vecs.Mv, p.vecs.nTrees, p.vecs.AM)
-dev.off()
-  
-  
-##############
-#B. Investigate individual relationships using mixed effects models with year+site as a random effect.
-##############
-
 #1) Run models
-Yvars<-plotVars
-YvarNames<-plotVarNames
-df<-data.vars.PCA
-result<-InvEffect(Yvars=Yvars, YvarNames=YvarNames, df=df)
+result<-InvEffect(Yvars=plotVars, YvarNames=plotVarNames, df=data.plotVars.wide)
 
 #2) Calculate means and save
-data.vars.PCA.long<-melt(data.vars.PCA, measure.vars=plotVars, id.vars = c('inv','year','plotid'))
-meanSummary<-ddply(data.vars.PCA.long, ~variable+inv, summarize,
-                   mean=mean(value),
-                   n=length(value),
-                   se=sd(value)/sqrt(n))
+data.plotVars.long<-melt(data.plotVars.wide, measure.vars=plotVars, id.vars = c('inv','year','plotid'))
+meanSummary<-ddply(data.plotVars.long, ~variable+inv, summarize,
+                   mean=mean(value, na.rm=TRUE),
+                   n=sum(!is.na(value)),
+                   se=sd(value, na.rm=TRUE)/sqrt(n))
 meanSummary[,c('mean','se')]<-round(meanSummary[,c('mean','se')], digits=2)
 colnames(meanSummary)[colnames(meanSummary) == 'variable']<-'vars'
-newfilename<-'meanSummary_allvars.txt'
+meanSummary
+newfilename<-'meanSummary_plotVars.txt'
 write.table(meanSummary, file=paste(figuresPath,newfilename, sep='/'), sep='\t')
 
 #3) Save coefficient and anova summary tables
-data.frame(result[['summarySummary']])
-newfilename<-'summarySummary_extra.txt'
+newfilename<-'summarySummary_plotVars.txt'
 write.table(data.frame(result[['summarySummary']]), file=paste(figuresPath,newfilename, sep='/'), sep='\t')
 #data.frame(result[['posthocSummary']])
-newfilename<-'posthocSummary_extra.txt'
+newfilename<-'posthocSummary_plotVars.txt'
 write.table(data.frame(result[['posthocSummary']]), file=paste(figuresPath,newfilename, sep='/'), sep='\t')
 
 #4) Plot
 #i) prep dataframe and params
-meanSummary.pretty<-merge(meanSummary, plotVars.indx)
-meanSummary.pretty$plotVarNames<-factor(meanSummary.pretty$plotVarNames,levels=plotVarNames)
-meanSummary.pretty$depth<-factor(meanSummary.pretty$depth, levels=depth_order)
-meanSummary.pretty$depth<-mapvalues(meanSummary.pretty$depth, from = depth_order, to = c('0-5cm','5-15cm'))
-meanSummary.pretty$inv<-mapvalues(meanSummary.pretty$inv, from = inv_order, to = invNames)
+meanSummary.pretty<-merge(meanSummary,plotVars.indx)
+meanSummary.pretty<-orderBy(~basic.vars.order+var.depth, meanSummary.pretty)
+meanSummary.pretty$basic.varNames.units<-factor(meanSummary.pretty$basic.varNames.units, levels = unique(meanSummary.pretty$basic.varNames.units))
+meanSummary.pretty$depth<-factor(meanSummary.pretty$depth, levels=c('T','B','NA'))
 limits <- aes(ymax = mean + se, ymin=mean - se)
+meanSummary.pretty$name<-meanSummary.pretty$basic.varNames.units
+meanSummary.pretty$name2 <- factor(meanSummary.pretty$name,
+                                   levels=c(levels(meanSummary.pretty$name)[1:2],'',
+                                            levels(meanSummary.pretty$name)[3:11]))
 
-plotVars.sub<-c('soilmoi_T','soilmoi_B','som_T','som_B','ph_T','ph_B')
-meanSummary.pretty.sub<-subset(meanSummary.pretty, vars %in% plotVars.sub)
-meanSummary.pretty.sub$basicVars<-c(rep('Soil pH',4), 
-                                    rep('Soil moisture (%)',4), 
-                                    rep('Org. Matter (%)',4))
-#ii) facet each soil response variable
-p1<-ggplot(meanSummary.pretty.sub, aes(x=inv, y=mean, linetype=depth, group=depth)) +
-  geom_point(size=3) + ylab('Measurement value') + xlab(NULL) +
+p<-ggplot(meanSummary.pretty, aes(x=inv, y=mean, linetype=depth, group=depth)) +
+  geom_point(size=3) + ylab(NULL) + xlab('Plot type') +
   geom_errorbar(limits, width=0.2) + geom_line() + 
-  facet_wrap(~basicVars, scales='free_y') + mytheme
+  facet_wrap(~name2, scales='free_y', ncol=3, drop=FALSE) + mytheme +
+  scale_linetype_discrete(name='Soil depth',labels=c('0-5cm','5-15cm')) +
+  scale_x_discrete(labels=c('Invaded','Reference'))
+p
 
-plotVars.sub<-c('nat_g.m2','litter_g.m2','percpar')
-meanSummary.pretty.sub<-subset(meanSummary.pretty, vars %in% plotVars.sub)
-meanSummary.pretty.sub$plotVarNames<-c(rep('Litter biomass (g/m2)',2), 
-                                       rep('Understory biomass (g/m2)',2), 
-                                       rep('Light avail. (%)',2))
+g <- ggplotGrob(p )
+## remove empty panels
+g$grobs[names(g$grobs) %in% c("panel3","strip_t3","axis_l3")] <- NULL
+## remove them from the layout
+g$layout <- g$layout[!(g$layout$name %in% c("panel-3","strip_t-3","axis_l-3")),]
 
-#ii) facet each soil response variable
-p2<-ggplot(meanSummary.pretty.sub, aes(x=inv, y=mean)) +
-  geom_point(size=3) + ylab('Measurement value') + xlab(NULL) +
-  geom_errorbar(limits, width=0.2) + geom_line() + 
-  facet_wrap(~plotVarNames, scales='free_y') + mytheme
-
-
-#iv) put panels together and save
-grid.arrange(p1 + guides(linetype=FALSE),
-             p2,
-             nrow=2)
-newfilename<-'pScat_allvars.png'
-png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*3, height = fig.height*2, res=fig.res)
-grid.arrange(p1+ guides(linetype=FALSE),
-             p2,
-             nrow=2)
+## plot
+grid.newpage()
+grid.draw(g)
+newfilename<-'pScat_plotVars.png'
+png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*3.5, height = fig.height*4, res=fig.res)
+grid.newpage()
+grid.draw(g)
 dev.off()
-
-##############
-#D. Identify N variables that increase/decrease across sites.
-##############
-data.frame(result[['posthocSummary']])
-paste('Soil moisture is higher in invaded plots')
-paste('Litter biomass is lower in invaded plots')
-
 ```
 
 _________________________________________________________________

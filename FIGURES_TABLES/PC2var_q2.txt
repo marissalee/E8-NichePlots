@@ -1,0 +1,17 @@
+"diffVar"	"PC"	"var"	"contrib"	"rot"
+"2"	"ammonifd"	"PC2"	"PercBA_AM"	20.82	-0.46
+"1"	"ammonifd"	"PC2"	"nTrees"	17.59	-0.42
+"3"	"ammonifd"	"PC2"	"percpar"	15.76	0.4
+"4"	"ammonifd"	"PC2"	"ph_T"	12.71	0.36
+"6"	"minzd"	"PC2"	"nTrees"	17.85	0.42
+"8"	"minzd"	"PC2"	"percpar"	17.28	-0.42
+"7"	"minzd"	"PC2"	"PercBA_AM"	17.12	0.41
+"5"	"minzd"	"PC2"	"litter_g.m2"	15.81	0.4
+"10"	"nitrifd"	"PC2"	"nTrees"	15.73	0.4
+"12"	"nitrifd"	"PC2"	"percpar"	15.16	-0.39
+"9"	"nitrifd"	"PC2"	"litter_g.m2"	14.56	0.38
+"11"	"nitrifd"	"PC2"	"PercBA_AM"	11.93	0.35
+"14"	"noi"	"PC2"	"nTrees"	21.7	-0.47
+"16"	"noi"	"PC2"	"percpar"	19.82	0.45
+"15"	"noi"	"PC2"	"PercBA_AM"	16.96	-0.41
+"13"	"noi"	"PC2"	"litter_g.m2"	13.4	-0.37

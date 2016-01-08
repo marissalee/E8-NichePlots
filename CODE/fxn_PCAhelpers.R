@@ -1,13 +1,12 @@
 #fxn_PCAhelpers.R
 
-
 #Q1 biplot based on ggbiplot(), https://github.com/vqv/ggbiplot/blob/master/R/ggbiplot.r
 ggbiplot_q1<- function(pcobj, df,...){
-  library(ggplot2)
-  library(plyr)
-  library(scales)
-  library(grid)
-  library(reshape2)
+  require(ggplot2)
+  require(plyr)
+  require(scales)
+  require(grid)
+  require(reshape2)
   
   choices=1:2
   scale=1
@@ -71,25 +70,27 @@ ggbiplot_q1<- function(pcobj, df,...){
   
   #Base plot without points indicating year
   g1 <- ggplot(data = df.u, aes(x = xvar, y = yvar)) + 
-    xlab(u.axis.labs[1]) + ylab(u.axis.labs[2]) + coord_equal() +
-    geom_point(aes(shape = inv), size=3, color='darkgray') + mytheme +
+    geom_point(aes(shape = inv), size=3, color='darkgray') +
+    xlab(u.axis.labs[1]) + ylab(u.axis.labs[2]) + coord_equal() + mytheme +
+    scale_shape_manual(name="Invasion status", values=shape.vec1, labels=labels.vec1)
+
+  #Base plot with site vectors instead of plot points
+  g2 <- ggplot(data = df.u, aes(x = xvar, y = yvar)) + 
+    geom_segment(mapping=aes(x=xvar_N, y=yvar_N, xend=xvar_I, yend=yvar_I), 
+                 data=df.u.castIN, arrow = arrow(length = unit(0.25, "cm")), color='darkgray') +
+    xlab(u.axis.labs[1]) + ylab(u.axis.labs[2]) + coord_equal() + mytheme +
     scale_shape_manual(name="Invasion status", values=shape.vec1, labels=labels.vec1)
   
-  # Add vectors
-  pBasic <- g + geom_segment(data = df.v,
-                             aes(x = 0, y = 0, xend = xvar, yend = yvar),
-                             arrow = arrow(length = unit(1/2, 'picas')), 
-                             color = 'black') + 
-    geom_text(data = df.v, aes(label = varname, x = xvar, y = yvar, angle = angle, hjust = hjust), 
-              color = 'black', size = 3)
-  
-  # Add vectors to g1
-  pBasic1 <- g1 + geom_segment(data = df.v,
-                               aes(x = 0, y = 0, xend = xvar, yend = yvar),
-                               arrow = arrow(length = unit(1/2, 'picas')), 
-                               color = 'black') + 
-    geom_text(data = df.v, aes(label = varname, x = xvar, y = yvar, angle = angle, hjust = hjust), 
-              color = 'black', size = 3)
+  # Add variable vectors
+  pBasic <- g + 
+    geom_segment(data = df.v,aes(x = 0, y = 0, xend = xvar, yend = yvar),arrow = arrow(length = unit(1/2, 'picas')), color = 'black') + 
+    geom_text(data = df.v, aes(label = varname, x = xvar, y = yvar, angle = angle, hjust = hjust), color = 'black', size = 3)
+  pBasic1 <- g1 + 
+    geom_segment(data = df.v, aes(x = 0, y = 0, xend = xvar, yend = yvar), arrow = arrow(length = unit(1/2, 'picas')), color = 'black') + 
+    geom_text(data = df.v, aes(label = varname, x = xvar, y = yvar, angle = angle, hjust = hjust), color = 'black', size = 3)
+  pBasic2 <- g2 + 
+    geom_segment(data = df.v, aes(x = 0, y = 0, xend = xvar, yend = yvar), arrow = arrow(length = unit(1/2, 'picas')), color = 'black') + 
+    geom_text(data = df.v, aes(label = varname, x = xvar, y = yvar, angle = angle, hjust = hjust), color = 'black', size = 3)
   
   # Overlay a concentration ellipse for inv
   theta <- c(seq(-pi, pi, length = 50), seq(pi, -pi, length = 50))
@@ -103,24 +104,25 @@ ggbiplot_q1<- function(pcobj, df,...){
   names(ell)[c(1:2)] <- c('xvar', 'yvar')
   pEllipseIN <- pBasic + geom_path(data = ell, aes(linetype = inv), color='blue') +
     scale_linetype_manual(name='Invasion status', values=c(3,1), labels=c('Invaded','Reference'))
-  
-  # Overlay a concentration ellipse for inv onto pBasic2
   pEllipseIN1 <- pBasic1 + geom_path(data = ell, aes(linetype = inv), color='blue') +
     scale_linetype_manual(name='Invasion status', values=c(3,1), labels=c('Invaded','Reference'))
+  pEllipseIN2 <- pBasic2 + geom_path(data = ell, aes(linetype = inv), color='blue') +
+    scale_linetype_manual(name='Invasion status', values=c(3,1), labels=c('Invaded','Reference'))
   
-  result.list<-list(pBasic=pBasic, pEllipseIN=pEllipseIN, pEllipseIN1=pEllipseIN1)
+  result.list<-list(pEllipseIN1=pEllipseIN1, pEllipseIN2=pEllipseIN2)
   
   return(result.list)
   
 }
 
-#Q3 biplot based on ggbiplot(), https://github.com/vqv/ggbiplot/blob/master/R/ggbiplot.r
-ggbiplot_q3<- function(pcobj, df=NULL,...){
-  library(ggplot2)
-  library(plyr)
-  library(scales)
-  library(grid)
-  library(reshape2)
+#Custom biplot based on ggbiplot(), https://github.com/vqv/ggbiplot/blob/master/R/ggbiplot.r
+ggbiplot_custom<- function(pcobj, byYear=FALSE, df=NULL,...){
+  
+  require(ggplot2)
+  require(plyr)
+  require(scales)
+  require(grid)
+  require(reshape2)
   
   choices=1:2
   scale=1
@@ -158,31 +160,39 @@ ggbiplot_q3<- function(pcobj, df=NULL,...){
   # Variables for text label placement
   df.v$angle <- with(df.v, (180/pi) * atan(yvar / xvar))
   df.v$hjust = with(df.v, (1 - varname.adjust * sign(xvar)) / 2)
-  
-  #other vars
-  df.u$year <- factor(df$year)
-  df.u$plotid <- df$plotid
   df.v$varname <- rownames(v)
   
-  # Base plot
-  shape.vec<-c(16,17) #circle=2012, triangle=2013, 
-  g <- ggplot(data = df.u, aes(x = xvar, y = yvar)) + 
-    xlab(u.axis.labs[1]) + ylab(u.axis.labs[2]) + coord_equal() +
-    geom_point(aes(shape = year), color='darkgray') + mytheme +
-    scale_color_manual(name="Year", values=shape.vec) 
+  if(byYear==TRUE){
+    #annotate df.u with other identifying variables
+    df.u$year <- factor(df$year)
+    df.u$plotid <- df$plotid
+    
+    #make plot
+    shape.vec<-c(16,17) #circle=2012, triangle=2013, 
+    pBasic <- ggplot(data = df.u, aes(x = xvar, y = yvar)) + 
+      geom_point(aes(shape = year), color='darkgray') +
+      geom_segment(data = df.v,
+                   aes(x = 0, y = 0, xend = xvar, yend = yvar),
+                   arrow = arrow(length = unit(1/2, 'picas')), 
+                   color = 'black') + 
+      geom_text(data = df.v, aes(label = varname, x = xvar, y = yvar, angle = angle, hjust = hjust), 
+                color = 'black', size = 3) +
+      xlab(u.axis.labs[1]) + ylab(u.axis.labs[2]) + coord_equal() +  mytheme +
+      scale_color_manual(name="Year", values=shape.vec)
+  }
   
-  # Add vectors
-  pBasic <- g + geom_segment(data = df.v,
-                             aes(x = 0, y = 0, xend = xvar, yend = yvar),
-                             arrow = arrow(length = unit(1/2, 'picas')), 
-                             color = 'black') + 
+  #make plot
+  pBasic <- ggplot(data = df.u, aes(x = xvar, y = yvar)) + 
+    geom_point(color='darkgray') + 
+    geom_segment(data = df.v,
+                 aes(x = 0, y = 0, xend = xvar, yend = yvar),
+                 arrow = arrow(length = unit(1/2, 'picas')), 
+                 color = 'black') + 
     geom_text(data = df.v, aes(label = varname, x = xvar, y = yvar, angle = angle, hjust = hjust), 
               color = 'black', size = 3) +
-    xlim(c(-2, 2.5)) + ylim(c(-2.5, 2.5))
+    xlab(u.axis.labs[1]) + ylab(u.axis.labs[2]) + coord_equal() + mytheme
   
-  result.list<-list(pBasic=pBasic)
-  
-  return(result.list)
+  return(pBasic)
   
 }
 
@@ -235,7 +245,6 @@ PCA.var.contrib_q1<-function(pca.obj){
   
 }
 
-
 #PCA.var.contrib: for q2, put together a dataframe with variables that contribute > 10% to PC1 or PC2 for a given diffVar.basic
 PCA.var.contrib_q2<-function(result.list, diffVar.basic){
   
@@ -284,9 +293,9 @@ RefPCA<-function(diffVar.basic, refVars, df, externalPercBA_AM){
   
   #identify impact measures
   select.diffVarTB<-paste('Diff',diffVar.basic, c('T','B'), sep='_')
-  
+  select.diffVarTB
   #identify variables to remove from refVars and the select.refVars and create dataframe
-  excludeVars<-vars.indx[vars.indx$basic.vars == diffVar.basic,'vars']
+  excludeVars<-nVars.indx[nVars.indx$basic.nVars == diffVar.basic,'nVars']
   select.refVars<-refVars[!refVars %in% excludeVars]
   df.ref<-data.frame(df[,select.refVars], year=df$year)
   rownames(df.ref)<-df$plotYear
@@ -296,7 +305,7 @@ RefPCA<-function(diffVar.basic, refVars, df, externalPercBA_AM){
   tmp<-df.ref.rm[,!(colnames(df.ref.rm) == 'year')]
   tmp.scaled<-scale(tmp)
   PCA.ref<-prcomp(tmp.scaled)
-  pPCA.ref<-ggbiplot(PCA.ref, groups=factor(df.ref.rm$year), ellipse=FALSE) + mytheme
+  pPCA.ref<-ggbiplot_custom(PCA.ref) + mytheme
   
   #identify model dataframe
   df.PCA.ref<-data.frame(plotYear=rownames(PCA.ref$x), PCA.ref$x)

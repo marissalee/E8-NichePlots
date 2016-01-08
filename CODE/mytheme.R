@@ -71,10 +71,27 @@ depth2<-c(rep(c("T","B"), (length(plotVars)-3)/2),rep("NA", 3))
 plotVars.indx<-data.frame(vars=plotVars, 
                           plotVarNames=plotVarNames, 
                           depth=depth2)
-
-#5) Microstegium biomass
-mvVar<-c('mv_g.m2')
-
+#add more info about variables by depth
+basic.vars<-c(basic.nVars, 'soilmoi','som','ph')
+vars<-c(paste(basic.vars, "T", sep="_"), paste(basic.vars, "B", sep="_")) 
+basic.varNames<-c(basic.nVarNames,'Moisture','Org. matter','pH') 
+varNames<-c(paste(basic.varNames, "0-5cm", sep=" "), paste(basic.varNames, "5-15cm", sep=" ")) 
+basic.vars.order<-c(1,2,3,4,5,6,7,8) 
+var.units<-c(units, c('(%)','(%)',''))
+var.depth<-c(rep("T", length(basic.vars)),rep("B", length(basic.vars))) 
+vars.indx<-data.frame(vars, varNames, basic.vars, basic.varNames, basic.vars.order, var.depth, var.units) 
+vars.indx<-orderBy(~basic.vars.order, vars.indx) 
+#merge
+plotVars.indx<-merge(plotVars.indx,vars.indx, all.x=TRUE)
+#fill in data for non-depth measurements
+plotVars.indx[is.na(plotVars.indx$basic.vars.order),'basic.vars.order']<-c(9,10,11)
+plotVars.indx$basic.varNames<-as.character(plotVars.indx$basic.varNames)
+plotVars.indx[is.na(plotVars.indx$var.depth),'basic.varNames']<-as.character(plotVars.indx[is.na(plotVars.indx$var.depth),'plotVarNames'])
+plotVars.indx$var.units<-as.character(plotVars.indx$var.units)
+plotVars.indx[is.na(plotVars.indx$var.depth),'var.units']<-c('(g/m2)','(g/m2)','(%)')
+plotVars.indx$basic.varNames.units<-paste(plotVars.indx$basic.varNames, plotVars.indx$var.units, sep=" ")
+plotVars.indx$var.depth<-factor(plotVars.indx$var.depth, levels=depth_order)
+plotVars.indx<-orderBy(~basic.vars.order+var.depth, plotVars.indx)
 
 ####################
 #PLOT TEMPLATE

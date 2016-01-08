@@ -38,7 +38,7 @@ NMDSplots<-function(nmds, data.vars.wide.rm ,NonValCols){
   
   #calculate group ellipses
   plot(nmds)
-  ord<-ordiellipse(nmds, sampleScores$inv, display = "sites", kind = "se", conf = 0.95, label = T)
+  ord<-ordiellipse(nmds, sampleScores$inv, display = "sites", kind = "sd", conf = 0.95, label = T)
   
   #set up dataframe
   df_ell <- data.frame()
@@ -68,8 +68,7 @@ NMDSplots<-function(nmds, data.vars.wide.rm ,NonValCols){
               data=variableScores, color=1, size=3) +
     mytheme + 
     scale_shape_manual(name='Plot type', values=c(16,1), labels=c('Invaded','Reference'))+
-    scale_linetype_manual(name='Plot type', values=c(1,2), labels=c('Invaded','Reference')) +
-    annotate("text", x=5, y=3, label=stressCh, size=3)
+    scale_linetype_manual(name='Plot type', values=c(3,1), labels=c('Invaded','Reference'))
 
   #with vectors for sites
   p.vecs<-ggplot(sampleScores, aes(x=MDS1, y=MDS2)) + 
@@ -82,11 +81,51 @@ NMDSplots<-function(nmds, data.vars.wide.rm ,NonValCols){
               data=variableScores, color=1, size=3) + 
     mytheme +
     scale_shape_manual(name='Plot type', values=c(16,1), labels=c('Invaded','Reference'))+
-    scale_linetype_manual(name='Plot type', values=c(1,2), labels=c('Invaded','Reference'))+
-    annotate("text", x=5, y=3, label=stressCh, size=3)
+    scale_linetype_manual(name='Plot type', values=c(3,1), labels=c('Invaded','Reference'))
   
   #save everything
-  results<-list(p=p, p.vecs=p.vecs)
+  results<-list(p=p, p.vecs=p.vecs, stressVal=stressVal)
   
   return(results)
 }
+
+
+#NMDSplots.3d: used to make NMDS plots that indicate invaded vs reference group and segments for each site
+NMDSplots.3d<-function(nmds, data.vars.wide.rm, NonValCols){
+  
+  #extract variable and sample scores
+  variableScores <- data.frame(id=rownames(nmds$species), nmds$species)
+  variableScores$angle <- with(variableScores, (180/pi) * atan(MDS2 / MDS1))
+  variableScores$hjust <- with(variableScores, (1 - 1.1 * sign(MDS1)) / 2)
+  variableScores$startVecs<-rep(0,dim(variableScores)[1])
+  sampleScores <- data.frame(id=row.names(nmds$points), data.vars.wide.rm[,NonValCols], nmds$points)
+  sampleScores.m<-melt(sampleScores, measure.vars=c('MDS1','MDS2','MDS3'))
+  sampleScores.c<-dcast(sampleScores.m, plotYear~inv+variable)
+  
+  #start plot (opens new window)
+  require(scatterplot3d)
+  plot3d(x=sampleScores$MDS1, y=sampleScores$MDS2, z=sampleScores$MDS3, 
+         xlab='x', ylab='y', zlab='z', type='n')
+  #add invaded and reference points
+  points3d(x=sampleScores[sampleScores$inv=='I','MDS1'], 
+           y=sampleScores[sampleScores$inv=='I','MDS2'],
+           z=sampleScores[sampleScores$inv=='I','MDS3'], color='darkgray') 
+  points3d(x=sampleScores[sampleScores$inv=='N','MDS1'], 
+           y=sampleScores[sampleScores$inv=='N','MDS2'],
+           z=sampleScores[sampleScores$inv=='N','MDS3'], color=1) 
+  #add segments that connect invaded and reference plots in the same site
+  segments3d(x=as.vector(t(sampleScores.c[,c('N_MDS1','I_MDS1')])),
+             y=as.vector(t(sampleScores.c[,c('N_MDS2','I_MDS2')])),
+             z=as.vector(t(sampleScores.c[,c('N_MDS3','I_MDS3')])), color='gray')
+  #add variable vectors
+  segments3d(x=as.vector(t(variableScores[,c('startVecs','MDS1')])),
+             y=as.vector(t(variableScores[,c('startVecs','MDS2')])),
+             z=as.vector(t(variableScores[,c('startVecs','MDS3')])), color=2)
+  #add variable vector labels
+  text3d(x=variableScores$MDS1, 
+         y=variableScores$MDS2, 
+         z=variableScores$MDS3, variableScores$id, color=2) 
+}
+
+
+
