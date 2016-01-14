@@ -32,7 +32,6 @@ library(car) #Anova()
 library(QuantPsyc) #lm.beta()
 library(semPlot)
 library(piecewiseSEM)
-#citation('piecewiseSEM')
 
 #CUSTOM FUNCTIONS
 source('CODE/fxn_reshapeHelpers.R')
@@ -40,10 +39,9 @@ source('CODE/fxn_PCAhelpers.R')
 source('CODE/fxn_NMDShelpers.R')
 source('CODE/fxn_InvEffect.R') #calculate invasion effect in a mixed effects model
 source('CODE/fxn_predictHelpers.R') #creates dataframes to feed into model predictions
-source('CODE/fxn_StdPathCoefs.R') #function to standardize path coefs
 
 #THEME
-source('CODE/mytheme.R')
+source('CODE/mytheme_data_a.R')
 
 #IMPORT, CLEAN, MERGE
 source('CODE/script_cleanMerge.R')
@@ -52,9 +50,7 @@ source('CODE/script_cleanMerge.R')
 #saves data 'data_d.txt' # removed variables that were only measured in 2011 (i.e. full soil depth 0-15cm measurements)
 
 #decide what dataset to use
-data.choice<-data_d
-
-
+data.choice<-data_a
 ```
 
 _________________________________________________________________
@@ -366,11 +362,9 @@ dev.off()
 _________________________________________________________________
 # 4. Q4: What is the relative importance of reference conditions on impact - direct and indirectly
 ```{r q4, echo=FALSE, message=FALSE, warning=FALSE}
-library(nlme)
 
 ################
-# Diff Ammonification
-#Model: Additive effects of PC1 and PC2 on invasion impact
+# Model: Additive effects of PC1 and PC2 on invasion impact
 
 #1. prep dataframe
 df.mod<-mod.ammonifd[['df.mod.used']]
@@ -385,95 +379,24 @@ colnames(df)<-c('plotYear','year','mv','impact','PC1','PC2')
 #2. look at dataset
 pairs(df)
 
-#3. Fit SEM model
-#mod1ri = Piecewise SEM with random intercept for year - with interations
-
-modlist <- list(
-  lme(mv ~ PC1 + PC2, random=~1|year, data=df),
-  lme(impact ~ mv + PC1 + PC2 + mv:PC1 + mv:PC2 + PC1:PC2, random=~1|year, data=df)
-  )
-
-#can't test the fit because the model is fully saturated
-sem.mod.fit<-sem.fit(modlist, data=df) 
-sem.mod.fit #error message??
-
-#non-standardized path coefs
-coefs<-sem.coefs(modelList=modlist, data=df, standardize="none")
-coefs
-
-#standardized path coefs
-sem.coefs(modelList=modlist, data=df, standardize="scale") #weird error message
-#use manual fxn ... this need to be tweaked
-coefs<-StdPathCoefs(sem.coef.obj=coefs, data=df)
-coefs
-
-#R2 values
-sem.model.fits(modlist)
-
-
-
-
-
-################
-# Diff Nitrate
-#Model: Additive effects of PC1 and PC2 on invasion impact
-
-#1. prep dataframe
-df.mod<-mod.noi[['df.mod.used']]
-df.full<-merge(df.mod, data.q2)
-diffVarShort<-'noi_T'
-select.diffVar<-paste('Diff',diffVarShort, sep='_')
-selectCols<-c('plotYear','year','mv_g.m2_logt',select.diffVar,'PC1','PC2')
-df<-df.full[,selectCols]
-colnames(df)
-colnames(df)<-c('plotYear','year','mv','impact','PC1','PC2')
-
-#2. look at dataset
-pairs(df)
-
-#3. Fit SEM model
-#mod1ri = Piecewise SEM with random intercept for year - with interations
-modlist <- list(
-  lme(mv ~ PC1 + PC2, random=~1|year, data=df),
-  lme(impact ~ mv + PC1 + PC2 + mv:PC1 + mv:PC2+ PC1:PC2, random=~1|year, data=df)
-  )
-
-#can't test the fit because the model is fully saturated
-sem.mod.fit<-sem.fit(modlist, data=df) 
-sem.mod.fit #error message??
-
-#non-standardized path coefs
-coefs<-sem.coefs(modelList=modlist, data=df, standardize="none")
-coefs
-
-#standardized path coefs
-sem.coefs(modelList=modlist, data=df, standardize="scale") #weird error message
-#use manual fxn ... this need to be tweaked
-coefs<-StdPathCoefs(sem.coef.obj=coefs, data=df)
-coefs
-
-#R2 values
-sem.model.fits(modlist)
-
-
-################
-# Diff Nitrification
-#Model: Additive effects of PC1 and PC2 on invasion impact
-
-#1. prep dataframe
-df.mod<-mod.nitrifd[['df.mod.used']]
-df.full<-merge(df.mod, data.q2)
-diffVarShort<-'nitrifd_T'
-select.diffVar<-paste('Diff',diffVarShort, sep='_')
-selectCols<-c('plotYear','year','mv_g.m2_logt',select.diffVar,'PC1','PC2')
-df<-df.full[,selectCols]
-colnames(df)
-colnames(df)<-c('plotYear','year','mv','impact','PC1','PC2')
-
-#2. look at dataset
-pairs(df)
-
 #3. Fit SEM models
+
+########
+#mod1 = Piecewise SEM (no random intercept for year)
+#fit the pieces
+Mv_LM<-lm(mv ~ PC1 + PC2, data=df)
+Imp_LM<-lm(impact ~ mv + PC1 + PC2, data=df)
+#evaluate the pieces
+Anova(Mv_LM) #PC2 is signif
+Anova(Imp_LM) #Mv is signif
+#standardized coefficients & r^2
+lm.beta(Mv_LM) 
+lm.beta(Imp_LM)
+summary(Mv_LM)$r.squared
+summary(Imp_LM)$r.squared
+#draw model fit results
+semPaths(Mv_LM+Imp_LM, layout="tree", "std", intercepts=FALSE)
+
 ########
 #mod1r = Piecewise SEM with random intercept for year
 mn<-mult.norm(df[,c('PC1','PC2','mv','impact')], chicrit = 0.005)
@@ -486,8 +409,8 @@ hist(df$PC1) #should I add a constant to make all these values positive??
 hist(df$PC2) #should I add a constant to make all these values positive??
 
 modlist <- list(
-  lme(mv ~ PC1 + PC2, random=~1|year, data=df),
-  lme(impact ~ mv + PC1 + PC2 + mv:PC1 + mv:PC2 + PC1:PC2, random=~1|year, data=df)
+  lmer(mv ~ PC1 + PC2 + (1|year), data=df),
+  lmer(impact ~ mv + PC1 + PC2 + (1|year), data=df)
   )
 
 #can't test the fit because the model is fully saturated
@@ -500,56 +423,105 @@ coefs
 
 #standardized path coefs
 sem.coefs(modelList=modlist, data=df, standardize="scale") #weird error message
+
+#function to standardize path coefs
+StdCoefs.manual<-function(sem.coef.obj, data){
+  #1. pull non-standardized path coef
+  unstd.coefs<-sem.coef.obj[,'estimate']
+  
+  #2. identify x and y data columns for that coef
+  std.coefs<-list()
+  i<-0
+  for(i in 1:length(unstd.coefs)){
+  
+    #identify x and y variable names
+    y.var.name<-sem.coef.obj[sem.coef.obj$estimate==unstd.coefs[i],'response']
+    x.var.name<-sem.coef.obj[sem.coef.obj$estimate==unstd.coefs[i],'predictor']
+    
+    #identify x and y data
+    y<-data[,as.character(y.var.name)]
+    x<-data[,as.character(x.var.name)]
+    
+    #calculated standardized path coef
+    std.coef<-unstd.coefs[i]*sd(x)/sd(y)
+    std.coefs[[i]]<-std.coef
+    
+  }
+  sem.coef.obj$std.estimate<-unlist(std.coefs)
+  
+  return(sem.coef.obj)
+  }
+
 coefs<-StdCoefs.manual(sem.coef.obj=coefs, data=df)
 coefs
 
 #R2 values
 sem.model.fits(modlist)
 
-
-################
-# Diff Mineralization
-#1. prep dataframe
-df.mod<-mod.minzd[['df.mod.used']]
-df.full<-merge(df.mod, data.q2)
-diffVarShort<-'minzd_T'
-select.diffVar<-paste('Diff',diffVarShort, sep='_')
-selectCols<-c('plotYear','year','mv_g.m2_logt',select.diffVar,'PC1','PC2')
-df<-df.full[,selectCols]
-colnames(df)
-colnames(df)<-c('plotYear','year','mv','impact','PC1','PC2')
-
-#2. look at dataset
-pairs(df)
-
-#3. Fit SEM models
 ########
-#mod1r = Piecewise SEM with random intercept for year
-mn<-mult.norm(df[,c('PC1','PC2','mv','impact')], chicrit = 0.005)
-mn$Dsq > mn$CriticalDsq #Are Mahalanobis distances greater than the critical value?
-#if the observation's Mahalanobis distance is NOT greater than the critical value, than the observation is NOT an outlier -- correct interpretation?
 
-hist(df$impact) #should I add a constant to make all these values positive??
-hist(df$mv) #this has been log-transformed
-hist(df$PC1) #should I add a constant to make all these values positive??
-hist(df$PC2) #should I add a constant to make all these values positive??
+#Model 2
 
+#1. prep dataframe
+
+#reshape full dataset
+data.tmp<-QuickReshape1(variables=allVars, variableNames=allVars, select.inv='both')
+data.tmp1<-data.tmp$data.vars.wide.rm
+NonValCols.tmp1<-data.tmp$NonValCols
+
+#make it wide
+m.data.tmp2<-melt(data.tmp1, id.vars=NonValCols.tmp1)
+m1.data.tmp2<-m.data.tmp2[,!colnames(m.data.tmp2) %in% c('plothalfid1','plotInvYear')]
+df<-dcast(m1.data.tmp2, plotid+year+plotYear~inv+variable)
+
+#merge with impact values
+df.mod<-mod.ammonifd[['df.mod.used']]
+df<-merge(df.mod, df)
+
+#remove 5-15cm layer measurements
+removeThese<-c(colnames(df)[grep('_B',colnames(df))], 'select.diffVarB')
+dfT<-df[,!colnames(df) %in% removeThese] #remove columns with data from the 5-15cm soil depth
+
+#remove invaded plot measuresment
+#removeThese<-colnames(dfT)[grep('I_',colnames(dfT))]
+#dfT1<-dfT[,!colnames(dfT) %in% removeThese] #remove columns with data from the 5-15cm soil depth
+
+#remove reference plot measures that match impact
+#dfT2<-dfT1[,!colnames(dfT1) %in% c('N_ammonifd_T')]
+
+#remove reference plot measures that do not load heavily onto PC1 or 2
+#soil comp (PC1) <- soilmoi, som, nitrifd
+#canopy comp (PC2) <- PercBA_AM, nTrees, percpar, ph, litterbiom
+#removeThese<-c('N_nh_T','N_noi_T','N_minzd_T','N_nat_g.m2')
+#dfT3<-dfT2[,!colnames(dfT2) %in% removeThese] #remove columns with data from the 5-15cm soil depth
+
+
+#look at dataset
+colnames(dfT)
+curr.nonValcols<-c('plotYear','year','plotid')
+dfT4<-dfT[,c('year','mv_g.m2_logt','PC1','PC2','N_ammonifd_T','I_ammonifd_T')]
+pairs(dfT4[,!colnames(dfT4) %in% curr.nonValcols])
+str(dfT4)
+dfT4$year<-factor(dfT4$year)
+str(dfT4)
+dfT4.rm<-dfT4[!rowSums(is.na(dfT4))>0,] #remove rows with NAs
+
+#set up models
 modlist <- list(
-  lme(mv ~ PC1 + PC2, random=~1|year, data=df),
-  lme(impact ~ mv + PC1 + PC2 + mv:PC1 + mv:PC2 + PC1:PC2, random=~1|year, data=df)
-  )
+  lmer(mv_g.m2_logt ~ PC1 + PC2 + (1|year), data=dfT4.rm),
+  lmer(I_ammonifd_T ~ N_ammonifd_T + mv_g.m2_logt + PC1 + PC2 + (1|year), data=dfT4.rm)
+)
 
-#can't test the fit because the model is fully saturated
-sem.mod.fit<-sem.fit(modlist, data=df) 
+#can't test the fit ?????
+sem.mod.fit<-sem.fit(modlist, data=dfT4.rm) 
 sem.mod.fit
 
 #non-standardized path coefs
-coefs<-sem.coefs(modelList=modlist, data=df, standardize="none")
+coefs<-sem.coefs(modelList=modlist, data=dfT4.rm, standardize="none")
 coefs
 
 #standardized path coefs
-sem.coefs(modelList=modlist, data=df, standardize="scale") #weird error message
-coefs<-StdCoefs.manual(sem.coef.obj=coefs, data=df)
+coefs<-StdCoefs.manual(sem.coef.obj=coefs, data=dfT4.rm)
 coefs
 
 #R2 values
