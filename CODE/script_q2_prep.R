@@ -45,6 +45,7 @@ data.q2$plotYear<-paste(data.q2$plotid,data.q2$year, sep="_")
 
 #v) If PercBA_AM should be included separately from reference conditions...Identify PercBA_AM and merge it into dataset
 #externalPercBA_AM
+externalPercBA_AM
 if(externalPercBA_AM == 'y'){
   
   #extract data and reformat

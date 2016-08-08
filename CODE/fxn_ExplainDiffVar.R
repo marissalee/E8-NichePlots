@@ -1,13 +1,6 @@
 #fxn_ExplainDiffVar.R
 
 #Fxn to run the models with reference conditions (excluding linked response variable) and Microstegium biomass predicting different y variables
-scale_xs=FALSE
-thing<-ScaleFit(df.mod, scale_xs=FALSE)
-names(thing)
-thing[['df.mod.used']]
-
-
-
 ScaleFit<-function(df.mod, scale_xs=TRUE){
   
   df.mod.used<-df.mod

@@ -38,9 +38,9 @@ library(piecewiseSEM)
 source('CODE/fxn_reshapeHelpers.R')
 source('CODE/fxn_PCAhelpers.R')
 source('CODE/fxn_NMDShelpers.R')
+source('CODE/fxn_ScaleFit_q2.R')
 source('CODE/fxn_InvEffect.R') #calculate invasion effect in a mixed effects model
 source('CODE/fxn_predictHelpers.R') #creates dataframes to feed into model predictions
-source('CODE/fxn_StdPathCoefs.R') #function to standardize path coefs
 
 #THEME
 source('CODE/mytheme.R')
@@ -111,9 +111,13 @@ externalPercBA_AM<-'n'
 #4. prep dataset
 source('CODE/script_q2_prep.R')
 #View(data.q2)
+write.table(data.q2, file="DATA/DATA_SYNTHESIZED/data_d_q2.txt", sep="\t")
+
+#for the traditional multivariate regression approach
+#see E8_multipleRegressions.Rmd
 
 
-##B. Run models for each of the following (Inv. - Ref): nitrate, nitrif, ammonif, minz 
+##B,ii. Run models for each of the following (Inv. - Ref): nitrate, nitrif, ammonif, minz 
 
 #1. decide on model formulation
 modelFormulaCode<-'PC1*PC2*Mv'
@@ -129,9 +133,13 @@ PC2var.c.o
 mod.df[mod.df$pval<0.05,]
 
 #check out some other models that disaggregate the varibles that are in PC1 and PC2
-source('CODE/extraScript_lookAtOtherModels.R')
+#source('CODE/extraScript_lookAtOtherModels.R')
+#warnings()
 
 #3. make plots
+shapeVec<-c(16,1)
+linetypeVec<-c(1,2)
+fillVec<-c("#a1bdec","#8a9aa9")
 
 ####################################
 #a. delta nitrate (inv-ref)
@@ -140,46 +148,94 @@ df.mod<-mod.noi[['df.mod.used']]
 modT<-mod.noi[['modT']]
 
 #set up PC2 levels
-df.mod$factorLevel<-NA
-lowLabel<-'Low light, many trees (PC2)'
-highLabel<-'High light, few trees (PC2)'
-df.mod[df.mod$PC2 >= quantile(df.mod$PC2)[1] & df.mod$PC2 < quantile(df.mod$PC2)[3],'factorLevel']<-lowLabel
-df.mod[df.mod$PC2 >= quantile(df.mod$PC2)[3] & df.mod$PC2 <= quantile(df.mod$PC2)[5],'factorLevel']<-highLabel
-df.mod$factorLevel<-factor(df.mod$factorLevel, levels=c(lowLabel, highLabel))
+df.mod<-SetupFactors(df=df.mod, catVar='PC2.use', labelNames=c('Low forest openness (PC2)', 'High forest openness (PC2)'))
+
+#figure out what the range of the PC2 factors correspond to
+curr.RefVars<-c('nTrees','percpar')
+curr.PC<-'PC2.use'
+#low
+df.tmp<-df.mod[df.mod$factorLevel=='Low forest openness (PC2)',]
+PullPCVals(df=df.tmp, orig.df=data.choice, PC=curr.PC, RefVars=curr.RefVars, min.or.max='min')
+PullPCVals(df=df.tmp, orig.df=data.choice, PC=curr.PC, RefVars=curr.RefVars, min.or.max='max')
+#high
+df.tmp<-df.mod[df.mod$factorLevel=='High forest openness (PC2)',]
+PullPCVals(df=df.tmp, orig.df=data.choice, PC=curr.PC, RefVars=curr.RefVars, min.or.max='min')
+PullPCVals(df=df.tmp, orig.df=data.choice, PC=curr.PC, RefVars=curr.RefVars, min.or.max='max')
 
 #plot: diff noi_T ~ Mvbiomass by PC2 levels
 #prediction data frames ...
 df.pred<-InteractionPlot_DF(n=100, xVar='mv_g.m2_logt', 
-                            factorVar='PC2', factorBin='factorLevel', 
+                            factorVar='PC2.use', factorBin='factorLevel', 
                             constantVar='PC1', 
-                            df=df.mod, mod=modT)
-
-#remove the year intercept
-mod.coefs<-coef(modT)$year
-int2012<-mod.coefs[1,1]
-int2013<-mod.coefs[2,1]
-int.Diff<-int2012 - int2013
-df.mod$select.diffVarT.minusYr<-df.mod$select.diffVarT
-df.mod[df.mod$year==2012,'select.diffVarT.minusYr']<-df.mod[df.mod$year==2012,'select.diffVarT'] - int.Diff
+                            df=df.mod, mod=modT, re.pred=TRUE)
+df.pred$year<-factor(df.pred$year)
 
 #plot
 pScat.noiDiff_MvPC2<-ggplot(data=df.pred, 
                             mapping=aes(x=mv_g.m2_logt, 
-                                        y=ypred.minusYr, 
-                                        ymin=CI.lwr.minusYr, ymax=CI.upr.minusYr))  +  
-  geom_ribbon(alpha=0.4) +
+                                        y=ypred, 
+                                        ymin=CI.lwr, ymax=CI.upr, 
+                                        shape=year, linetype=year, fill=year))  +  
+  geom_ribbon(alpha=0.8) +
   geom_line() +
   facet_grid(~factorLevel) +
   geom_abline(intercept=0,slope=0, linetype=3, color='gray50') + 
-  mytheme + ylab(expression(paste(Delta," Nitrate 0-5cm (Inv.-Ref.)"))) + xlab('Microstegium biomass (log g/m2)') + 
-  geom_point(data=df.mod, aes(y=select.diffVarT.minusYr, ymin=NULL, ymax=NULL)) 
+  mytheme + ylab(expression(paste(Delta," Nitrate 0-5cm (Inv.-Ref.)"))) + 
+  xlab('Microstegium biomass (log g/m2)') + 
+  geom_point(data=df.mod, aes(y=select.diffVarT, ymin=NULL, ymax=NULL)) +
+  scale_shape_manual(values=shapeVec) +
+  scale_linetype_manual(values=linetypeVec) +
+  scale_fill_manual(values=fillVec)
 pScat.noiDiff_MvPC2
+
+
+#plot: diff noi_T ~ PC1 by PC2 levels
+#prediction data frames ...
+df.pred<-InteractionPlot_DF(n=100, xVar='PC1', 
+                            factorVar='PC2.use', factorBin='factorLevel', 
+                            constantVar='mv_g.m2_logt', 
+                            df=df.mod, mod=modT, re.pred=TRUE)
+df.pred$year<-factor(df.pred$year)
+
+#plot
+pScat.noiDiff_PC1PC2<-ggplot(data=df.pred, 
+                            mapping=aes(x=PC1, 
+                                        y=ypred, 
+                                        ymin=CI.lwr, ymax=CI.upr, 
+                                        shape=year, linetype=year, fill=year))  +  
+  geom_ribbon(alpha=0.8) +
+  geom_line() +
+  facet_grid(~factorLevel) +
+  geom_abline(intercept=0,slope=0, linetype=3, color='gray50') + 
+  mytheme + ylab(expression(paste(Delta," Nitrate 0-5cm (Inv.-Ref.)"))) + 
+  xlab('Soil moisture and OM (PC1)') + 
+  geom_point(data=df.mod, aes(y=select.diffVarT, ymin=NULL, ymax=NULL)) +
+  scale_shape_manual(values=shapeVec) +
+  scale_linetype_manual(values=linetypeVec) +
+  scale_fill_manual(values=fillVec)
+pScat.noiDiff_PC1PC2
+
 #save plots
-newfilename<-"pScat_noiDiff.png"
-png(paste(figuresPath,newfilename, sep='/'), units='in', 
-    width = fig.width*2, height = fig.height*1.2, res=fig.res)
-pScat.noiDiff_MvPC2 + guides(linetype=FALSE, fill=FALSE)
+newfilename<-"pScat_noiDiff_Xmv.pdf"
+pdf(paste(figuresPath,newfilename, sep='/'), 
+    width = fig.width*2, height = fig.height*1.2)
+pScat.noiDiff_MvPC2 + guides(shape=FALSE, linetype=FALSE, fill=FALSE)
 dev.off()
+
+newfilename<-"pScat_noiDiff_Xpc1.pdf"
+pdf(paste(figuresPath,newfilename, sep='/'),  
+    width = fig.width*2, height = fig.height*1.2)
+pScat.noiDiff_PC1PC2+ guides(shape=FALSE, linetype=FALSE, fill=FALSE)
+dev.off()
+
+newfilename<-"pScat_noiDiff_both.pdf"
+pdf(paste(figuresPath,newfilename, sep='/'), 
+    width = fig.width*2, height = fig.height*2.2)
+grid.arrange(pScat.noiDiff_MvPC2 + guides(shape=FALSE, linetype=FALSE, fill=FALSE), 
+             pScat.noiDiff_PC1PC2 + guides(shape=FALSE, linetype=FALSE, fill=FALSE))
+dev.off()
+
+
 
 
 ####################################
@@ -189,74 +245,349 @@ df.mod<-mod.ammonifd[['df.mod.used']]
 modT<-mod.ammonifd[['modT']]
 
 #set up PC1 levels
-df.mod$factorLevel<-NA
-lowLabel<-'Low moisture & OM (PC1)'
-highLabel<-'High moisture & OM (PC1)'
-df.mod[df.mod$PC1 >= quantile(df.mod$PC1)[1] & df.mod$PC1 < quantile(df.mod$PC1)[3],'factorLevel']<-lowLabel
-df.mod[df.mod$PC1 >= quantile(df.mod$PC1)[3] & df.mod$PC1 <= quantile(df.mod$PC1)[5],'factorLevel']<-highLabel
-df.mod$factorLevel<-factor(df.mod$factorLevel, levels=c(lowLabel, highLabel))
+df.mod<-SetupFactors(df=df.mod, catVar='PC1', labelNames=c('Low moisture & OM (PC1)', 'High moisture & OM (PC1)'))
 
-#set up PC2 levels
-df.mod$factorLevel2<-NA
-lowLabel<-'Low light, more trees (PC2)'
-highLabel<-'High light, few trees (PC2)'
-df.mod[df.mod$PC2 >= quantile(df.mod$PC2)[1] & df.mod$PC2 < quantile(df.mod$PC2)[3],'factorLevel2']<-lowLabel
-df.mod[df.mod$PC2 >= quantile(df.mod$PC2)[3] & df.mod$PC2 <= quantile(df.mod$PC2)[5],'factorLevel2']<-highLabel
-df.mod$factorLevel2<-factor(df.mod$factorLevel2, levels=c(lowLabel, highLabel))
+#figure out what the range of the PC1 factors correspond to
+curr.RefVars<-c('soilmoi_T','soilmoi_B','som_T','som_B')
+curr.PC<-'PC1'
+#low
+df.tmp<-df.mod[df.mod$factorLevel=='Low moisture & OM (PC1)',]
+PullPCVals(df=df.tmp, orig.df=data.choice, PC=curr.PC, RefVars=curr.RefVars, min.or.max='min')
+PullPCVals(df=df.tmp, orig.df=data.choice, PC=curr.PC, RefVars=curr.RefVars, min.or.max='max')
+#high
+df.tmp<-df.mod[df.mod$factorLevel=='High moisture & OM (PC1)',]
+PullPCVals(df=df.tmp, orig.df=data.choice, PC=curr.PC, RefVars=curr.RefVars, min.or.max='min')
+PullPCVals(df=df.tmp, orig.df=data.choice, PC=curr.PC, RefVars=curr.RefVars, min.or.max='max')
+
 
 #plot: diff ammonif_T ~ Mvbiomass by PC1 levels
 #prediction data frames ...
 df.pred1<-InteractionPlot_DF(n=100, xVar='mv_g.m2_logt', 
                             factorVar='PC1', factorBin='factorLevel', 
-                            constantVar='PC2', 
-                            df=df.mod, mod=modT)
-
-#remove the year intercept
-mod.coefs<-coef(modT)$year
-int2012<-mod.coefs[1,1]
-int2013<-mod.coefs[2,1]
-int.Diff<-int2012 - int2013
-df.mod$select.diffVarT.minusYr<-df.mod$select.diffVarT
-df.mod[df.mod$year==2012,'select.diffVarT.minusYr']<-df.mod[df.mod$year==2012,'select.diffVarT'] - int.Diff
+                            constantVar='PC2.use', 
+                            df=df.mod, mod=modT, re.pred=TRUE)
+#str(df.pred1)
+df.pred1$year<-factor(df.pred1$year)
 
 #plot
 pScat.ammonifdDiff_MvPC1<-ggplot(data=df.pred1, 
                                  mapping=aes(x=mv_g.m2_logt, 
-                                             y=ypred.minusYr, 
-                                             ymin=CI.lwr.minusYr, ymax=CI.upr.minusYr))  +  
-  geom_ribbon(alpha=0.4) +
-  geom_line() +
+                                             y=ypred, 
+                                             ymin=CI.lwr, ymax=CI.upr, 
+                                             shape=year, linetype=year, fill=year))  +  
+  geom_ribbon(alpha=0.8) +
+  geom_line(color='black') +
   facet_grid(~factorLevel) +
   geom_abline(intercept=0,slope=0, linetype=3, color='gray50') + 
   mytheme + ylab(expression(paste(Delta," Ammonif. 0-5cm (Inv.-Ref.)"))) + 
   xlab('Microstegium biomass (log g/m2)') + 
-  geom_point(data=df.mod, aes(y=select.diffVarT.minusYr, ymin=NULL, ymax=NULL))
+  geom_point(data=df.mod, aes(y=select.diffVarT, ymin=NULL, ymax=NULL)) +
+  scale_shape_manual(values=shapeVec) +
+  scale_linetype_manual(values=linetypeVec) +
+  scale_fill_manual(values=fillVec)
 pScat.ammonifdDiff_MvPC1
+
+
+#plot just the high PC1 panel
+df.mod_highPC1<-subset(df.mod, factorLevel == 'High moisture & OM (PC1)')
+df.pred1_highPC1<-subset(df.pred1, factorLevel == 'High moisture & OM (PC1)')
+pScat.ammonifdDiff_Mv.high.PC1<-ggplot(data=df.pred1_highPC1, 
+                                 mapping=aes(x=mv_g.m2_logt, 
+                                             y=ypred, 
+                                             ymin=CI.lwr, ymax=CI.upr, 
+                                             shape=year, linetype=year, fill=year))  +  
+  geom_ribbon(alpha=0.8) +
+  geom_line() +
+  geom_abline(intercept=0,slope=0, linetype=3, color='gray50') + 
+  mytheme + ylab(expression(paste(Delta," Ammonif. 0-5cm (Inv.-Ref.)"))) + 
+  xlab('Microstegium biomass (log g/m2)') + 
+  geom_point(data=df.mod_highPC1, aes(y=select.diffVarT, ymin=NULL, ymax=NULL))+
+  scale_shape_manual(values=shapeVec) +
+  scale_linetype_manual(values=linetypeVec) +
+  scale_fill_manual(values=fillVec)
+pScat.ammonifdDiff_Mv.high.PC1
+
 
 #plot: diff ammonifd_T ~ PC2 by PC1 levels
 #prediction data frames ...
-df.pred2<-InteractionPlot_DF(n=100, xVar='PC2', 
+df.pred2<-InteractionPlot_DF(n=100, xVar='PC2.use', 
                             factorVar='PC1', factorBin='factorLevel', 
                             constantVar='mv_g.m2_logt', 
-                            df=df.mod, mod=modT)
+                            df=df.mod, mod=modT, re.pred=TRUE)
+#str(df.pred2)
+df.pred2$year<-factor(df.pred2$year)
 pScat.ammonifdDiff_PC2PC1<-ggplot(data=df.pred2, 
-                                  mapping=aes(x=PC2, 
-                                              y=ypred.minusYr, 
-                                              ymin=CI.lwr.minusYr, ymax=CI.upr.minusYr))  +  
-  geom_ribbon(alpha=0.4) +
+                                  mapping=aes(x=PC2.use, 
+                                              y=ypred, 
+                                              ymin=CI.lwr, ymax=CI.upr, 
+                                             shape=year, linetype=year, fill=year))  +  
+  geom_ribbon(alpha=0.8) +
   geom_line() +
   facet_grid(~factorLevel) +
   geom_abline(intercept=0,slope=0, linetype=3, color='gray50') + 
   mytheme + ylab(expression(paste(Delta," Ammonif. 0-5cm (Inv.-Ref.)"))) + 
-  xlab('PC2 (increasing light, decreasing trees)') + 
-  geom_point(data=df.mod, aes(y=select.diffVarT.minusYr, ymin=NULL, ymax=NULL))
+  xlab('Forest openness (PC2)') + 
+  geom_point(data=df.mod, aes(y=select.diffVarT, ymin=NULL, ymax=NULL))+
+  scale_shape_manual(values=shapeVec) +
+  scale_linetype_manual(values=linetypeVec) +
+  scale_fill_manual(values=fillVec)
 pScat.ammonifdDiff_PC2PC1
 
+#plot just the high PC1 panel
+df.pred2_highPC1<-subset(df.pred2, factorLevel == 'High moisture & OM (PC1)')
+pScat.ammonifdDiff_PC2.high.PC1<-ggplot(data=df.pred2_highPC1, 
+                                  mapping=aes(x=PC2.use, 
+                                              y=ypred, 
+                                              ymin=CI.lwr, ymax=CI.upr, 
+                                             shape=year, linetype=year, fill=year))  +  
+  geom_ribbon(alpha=0.8) +
+  geom_line() +
+  geom_abline(intercept=0,slope=0, linetype=3, color='gray50') + 
+  mytheme + ylab(expression(paste(Delta," Ammonif. 0-5cm (Inv.-Ref.)"))) + 
+  xlab('Forest openness (PC2)') + 
+  geom_point(data=df.mod_highPC1, aes(y=select.diffVarT, ymin=NULL, ymax=NULL))+
+  scale_shape_manual(values=shapeVec) +
+  scale_linetype_manual(values=linetypeVec) +
+  scale_fill_manual(values=fillVec)
+pScat.ammonifdDiff_PC2.high.PC1
+
+
+#plot: diff ammonifd_T ~ PC1
+#prediction data frames ...
+df.pred3<-XYPlot_DF(n=100, xVar='PC1', 
+                            constantVar=c('mv_g.m2_logt','PC2.use'), 
+                            df=df.mod, mod=modT, re.pred=TRUE)
+#str(df.pred3)
+df.pred3$year<-factor(df.pred3$year)
+pScat.ammonifdDiff_PC1<-ggplot(data=df.pred3, 
+                                  mapping=aes(x=PC1, 
+                                              y=ypred, 
+                                              ymin=CI.lwr, ymax=CI.upr, 
+                                             shape=year, linetype=year, fill=year))  +  
+  geom_ribbon(alpha=0.8) +
+  geom_line() +
+  geom_abline(intercept=0,slope=0, linetype=3, color='gray50') + 
+  mytheme + ylab(expression(paste(Delta," Ammonif. 0-5cm (Inv.-Ref.)"))) + 
+  xlab('Soil moisture and OM (PC1)') + 
+  geom_point(data=df.mod, aes(y=select.diffVarT, ymin=NULL, ymax=NULL))+
+  scale_shape_manual(values=shapeVec) +
+  scale_linetype_manual(values=linetypeVec) +
+  scale_fill_manual(values=fillVec)
+pScat.ammonifdDiff_PC1
+
+
 #save plots
-newfilename<-'pScat.ammonifdDiff.png'
-png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*2, height = fig.height*2.2, res=fig.res)
-grid.arrange(pScat.ammonifdDiff_MvPC1 + guides(linetype=FALSE, fill=FALSE),
-             pScat.ammonifdDiff_PC2PC1+ guides(linetype=FALSE, fill=FALSE))
+
+newfilename<-'pScat_ammonifdDiff_Xmv.pdf'
+pdf(paste(figuresPath,newfilename, sep='/'),  
+    width = fig.width*2, height = fig.height*1.2)
+pScat.ammonifdDiff_MvPC1+ guides(shape=FALSE, linetype=FALSE, fill=FALSE)
+dev.off()
+
+newfilename<-'pScat_ammonifdDiff_XPC2.pdf'
+pdf(paste(figuresPath,newfilename, sep='/'), 
+    width = fig.width*2, height = fig.height*1.2)
+pScat.ammonifdDiff_PC2PC1+ guides(shape=FALSE, linetype=FALSE, fill=FALSE)
+dev.off()
+
+newfilename<-'pScat_ammonifdDiff_bothHigh.pdf'
+pdf(paste(figuresPath,newfilename, sep='/'),  
+    width = fig.width*2, height = fig.height*2.2)
+grid.arrange(pScat.ammonifdDiff_Mv.high.PC1+ guides(shape=FALSE, linetype=FALSE, fill=FALSE),
+             pScat.ammonifdDiff_PC2.high.PC1+ guides(shape=FALSE, linetype=FALSE, fill=FALSE), 
+             ncol=2)
+dev.off()
+
+newfilename<-'pScat_ammonifdDiff_XPC1.pdf'
+pdf(paste(figuresPath,newfilename, sep='/'), 
+    width = fig.width*2, height = fig.height*1.2)
+pScat.ammonifdDiff_PC1+ guides(shape=FALSE, linetype=FALSE, fill=FALSE)
+dev.off()
+
+newfilename<-'pScat_ammonifdDiff_both.png'
+pdf(paste(figuresPath,newfilename, sep='/'), 
+    width = fig.width*2, height = fig.height*3.2)
+grid.arrange(pScat.ammonifdDiff_MvPC1+ guides(shape=FALSE, linetype=FALSE, fill=FALSE),
+             pScat.ammonifdDiff_PC2PC1+ guides(shape=FALSE, linetype=FALSE, fill=FALSE),
+             pScat.ammonifdDiff_PC1+ guides(shape=FALSE, linetype=FALSE, fill=FALSE))
+dev.off()
+
+
+newfilename<-'pScat_ammonifdDiff_mainFig.pdf'
+pdf(paste(figuresPath,newfilename, sep='/'), 
+    width = fig.width*2, height = fig.height*2.2)
+grid.arrange(pScat.ammonifdDiff_MvPC1+ guides(shape=FALSE, linetype=FALSE, fill=FALSE),
+             pScat.ammonifdDiff_PC2PC1+ guides(shape=FALSE, linetype=FALSE, fill=FALSE))
+dev.off()
+
+newfilename<-'pScat_ammonifdDiff_suppFig.pdf'
+pdf(paste(figuresPath,newfilename, sep='/'), 
+    width = fig.width*1, height = fig.height*1.05)
+pScat.ammonifdDiff_PC1+ guides(shape=FALSE, linetype=FALSE, fill=FALSE)
+dev.off()
+
+
+
+
+####################################
+#c. delta nitrification (inv-ref)
+####################################
+df.mod<-mod.nitrifd[['df.mod.used']]
+modT<-mod.nitrifd[['modT']]
+
+#set up PC1 levels
+df.mod<-SetupFactors(df=df.mod, catVar='PC1', labelNames=c('Low moisture & OM (PC1)', 'High moisture & OM (PC1)'))
+
+#plot: diff nitrifd_T ~ Mvbiomass by PC1 levels
+#prediction data frames ...
+df.pred1<-InteractionPlot_DF(n=100, xVar='mv_g.m2_logt', 
+                            factorVar='PC1', factorBin='factorLevel', 
+                            constantVar='PC2.use', 
+                            df=df.mod, mod=modT, re.pred=TRUE)
+#str(df.pred1)
+df.pred1$year<-factor(df.pred1$year)
+
+#plot
+pScat.nitrifdDiff_MvPC1<-ggplot(data=df.pred1, 
+                                 mapping=aes(x=mv_g.m2_logt, 
+                                             y=ypred, 
+                                             ymin=CI.lwr, ymax=CI.upr, 
+                                             shape=year, linetype=year, fill=year))  +  
+  geom_ribbon(alpha=0.8) +
+  geom_line() +
+  facet_grid(~factorLevel) +
+  geom_abline(intercept=0,slope=0, linetype=3, color='gray50') + 
+  mytheme + ylab(expression(paste(Delta," Nitrif. 0-5cm (Inv.-Ref.)"))) + 
+  xlab('Microstegium biomass (log g/m2)') + 
+  geom_point(data=df.mod, aes(y=select.diffVarT, ymin=NULL, ymax=NULL))+
+  scale_shape_manual(values=shapeVec) +
+  scale_linetype_manual(values=linetypeVec) +
+  scale_fill_manual(values=fillVec)
+pScat.nitrifdDiff_MvPC1
+
+#save plots
+
+newfilename<-'pScat_nitrifdDiff_Xmv.pdf'
+pdf(paste(figuresPath,newfilename, sep='/'), 
+    width = fig.width*2, height = fig.height*1.2)
+pScat.nitrifdDiff_MvPC1+ guides(shape=FALSE, linetype=FALSE, fill=FALSE)
+dev.off()
+
+####################################
+#d. delta mineralization (inv-ref)
+####################################
+df.mod<-mod.minzd[['df.mod.used']]
+modT<-mod.minzd[['modT']]
+
+#set up PC1 levels
+df.mod<-SetupFactors(df=df.mod, catVar='PC1', labelNames=c('Low moisture & OM (PC1)', 'High moisture & OM (PC1)'))
+
+#plot: diff minzd_T ~ Mvbiomass by PC1 levels
+#prediction data frames ...
+df.pred1<-InteractionPlot_DF(n=100, xVar='mv_g.m2_logt', 
+                            factorVar='PC1', factorBin='factorLevel', 
+                            constantVar='PC2.use', 
+                            df=df.mod, mod=modT, re.pred=TRUE)
+#str(df.pred1)
+df.pred1$year<-factor(df.pred1$year)
+
+#plot
+pScat.minzdDiff_MvPC1<-ggplot(data=df.pred1, 
+                                 mapping=aes(x=mv_g.m2_logt, 
+                                             y=ypred, 
+                                             ymin=CI.lwr, ymax=CI.upr, 
+                                             shape=year, linetype=year, fill=year))  +  
+  geom_ribbon(alpha=0.8) +
+  geom_line() +
+  facet_grid(~factorLevel) +
+  geom_abline(intercept=0,slope=0, linetype=3, color='gray50') + 
+  mytheme + ylab(expression(paste(Delta," Mineraliz. 0-5cm (Inv.-Ref.)"))) + 
+  xlab('Microstegium biomass (log g/m2)') + 
+  geom_point(data=df.mod, aes(y=select.diffVarT, ymin=NULL, ymax=NULL))+
+  scale_shape_manual(values=shapeVec) +
+  scale_linetype_manual(values=linetypeVec) +
+  scale_fill_manual(values=fillVec)
+pScat.minzdDiff_MvPC1
+
+
+#plot: diff minzd_T ~ PC2 by PC1 levels
+#prediction data frames ...
+df.pred1<-InteractionPlot_DF(n=100, xVar='PC2.use', 
+                            factorVar='PC1', factorBin='factorLevel', 
+                            constantVar='mv_g.m2_logt', 
+                            df=df.mod, mod=modT, re.pred=TRUE)
+df.pred1$year<-factor(df.pred1$year)
+
+#plot
+pScat.minzdDiff_PC2PC1<-ggplot(data=df.pred1, 
+                                 mapping=aes(x=PC2.use, 
+                                             y=ypred, 
+                                             ymin=CI.lwr, ymax=CI.upr, 
+                                             shape=year, linetype=year, fill=year))  +  
+  geom_ribbon(alpha=0.8) +
+  geom_line() +
+  facet_grid(~factorLevel) +
+  geom_abline(intercept=0,slope=0, linetype=3, color='gray50') + 
+  mytheme + ylab(expression(paste(Delta," Mineraliz. 0-5cm (Inv.-Ref.)"))) + 
+  xlab('Forest openness (PC2)') + 
+  geom_point(data=df.mod, aes(y=select.diffVarT, ymin=NULL, ymax=NULL))+
+  scale_shape_manual(values=shapeVec) +
+  scale_linetype_manual(values=linetypeVec) +
+  scale_fill_manual(values=fillVec)
+pScat.minzdDiff_PC2PC1
+
+
+
+#plot: diff minzd_T ~ PC1
+#prediction data frames ...
+df.pred3<-XYPlot_DF(n=100, xVar='PC1', 
+                            constantVar=c('mv_g.m2_logt','PC2.use'), 
+                            df=df.mod, mod=modT, re.pred=TRUE)
+df.pred3$year<-factor(df.pred3$year)
+
+pScat.minzdDiff_PC1<-ggplot(data=df.pred3, 
+                                  mapping=aes(x=PC1, 
+                                              y=ypred, 
+                                              ymin=CI.lwr, ymax=CI.upr, 
+                                             shape=year, linetype=year, fill=year))  +  
+  geom_ribbon(alpha=0.8) +
+  geom_line() +
+  geom_abline(intercept=0,slope=0, linetype=3, color='gray50') + 
+  mytheme + ylab(expression(paste(Delta," Mineraliz. 0-5cm (Inv.-Ref.)"))) + 
+  xlab('Soil moisture and OM (PC1)') + 
+  geom_point(data=df.mod, aes(y=select.diffVarT, ymin=NULL, ymax=NULL))+
+  scale_shape_manual(values=shapeVec) +
+  scale_linetype_manual(values=linetypeVec) +
+  scale_fill_manual(values=fillVec)
+pScat.minzdDiff_PC1
+
+
+#save plots
+
+newfilename<-'pScat_minzdDiff_Xmv.pdf'
+pdf(paste(figuresPath,newfilename, sep='/'), 
+    width = fig.width*2, height = fig.height*1.2)
+pScat.minzdDiff_MvPC1+ guides(shape=FALSE, linetype=FALSE, fill=FALSE)
+dev.off()
+
+newfilename<-'pScat_minzdDiff_XPC2.pdf'
+pdf(paste(figuresPath,newfilename, sep='/'),  
+    width = fig.width*2, height = fig.height*1.2)
+pScat.minzdDiff_PC2PC1+ guides(shape=FALSE, linetype=FALSE, fill=FALSE)
+dev.off()
+
+newfilename<-'pScat_minzdDiff_XPC1.pdf'
+pdf(paste(figuresPath,newfilename, sep='/'), 
+    width = fig.width*2, height = fig.height*1.2)
+pScat.minzdDiff_PC1+ guides(shape=FALSE, linetype=FALSE, fill=FALSE)
+dev.off()
+
+newfilename<-'pScat_minzdDiff_both.pdf'
+pdf(paste(figuresPath,newfilename, sep='/'), 
+    width = fig.width*2, height = fig.height*3.2)
+grid.arrange(pScat.minzdDiff_MvPC1+ guides(shape=FALSE, linetype=FALSE, fill=FALSE),
+             pScat.minzdDiff_PC2PC1+ guides(shape=FALSE, linetype=FALSE, fill=FALSE),
+             pScat.minzdDiff_PC1+ guides(shape=FALSE, linetype=FALSE, fill=FALSE))
 dev.off()
 
 
@@ -288,12 +619,15 @@ tmp.scaled<-scale(tmp)
 PCA.res<-prcomp(tmp.scaled)
 pPCA_q3<-ggbiplot_custom(pcobj=PCA.res, df=data.q3.rm) #saved in 'script_visualize.R'
 pPCA_q3
+sort(PCA.res$rotation[,1]) #PC1 loadings
+sort(PCA.res$rotation[,2]) #PC2 loadings.. more trees, less light
 df.PCA<-data.frame(plotYear=row.names(PCA.res$x), PCA.res$x)
+df.PCA$PC2_neg1<-df.PCA$PC2*-1 #less tree, more light (forest openness)
 
 #add Mv biomass to dataset
 colnames(data.mvVar.wide) #from 'script_q2_prep.R'
 data.mvVar.wide$plotYear<-paste(data.mvVar.wide$plotid, data.mvVar.wide$year, sep="_")
-data.q3.PCA<-merge(data.mvVar.wide, df.PCA[,c(1:3)])
+data.q3.PCA<-merge(data.mvVar.wide, df.PCA[,c('plotYear','PC1','PC2_neg1')])
 
 #3) Do reference area and plot characteristics explain variation in Mv biomass? - perMANOVA on mv biomass
 perMANOVA<-adonis(tmp.scaled ~ mv_g.m2, data = data.q3.PCA, method='eu')
@@ -308,7 +642,6 @@ write.table(aov.tab.permanova, file=paste(figuresPath,newfilename, sep='/'), sep
 #1) Fit model
 data.q3.PCA$year<-factor(data.q3.PCA$year)
 df.mod<-data.q3.PCA
-df.mod$PC2_neg1<-df.mod$PC2*-1
 
 #If PercBA_AM should be included separately from reference conditions...Identify PercBA_AM and merge it into dataset
 #externalPercBA_AM
@@ -332,34 +665,65 @@ newfilename<-'summaryTable_q3.txt'
 write.table(summary(mod)$coefficients, file=paste(figuresPath,newfilename, sep='/'), sep='\t')
 
 #2) Plot
-#set up prediction dataframes
-df.pred<-XYPlot_DF(n=100, xVar='PC2_neg1', constantVar='PC1', df=df.mod, mod=mod)
+#set up PC1 levels
+df.mod<-SetupFactors(df=df.mod, catVar='PC1', labelNames=c('Low moisture & OM (PC1)', 'High moisture & OM (PC1)'))
 
-#remove the year intercept
-mod.coefs<-coef(mod)$year
-int2012<-mod.coefs[1,1]
-int2013<-mod.coefs[2,1]
-int.Diff<-int2012 - int2013
-df.mod$mv_g.m2_logt.minusYr<-df.mod$mv_g.m2_logt
-df.mod[df.mod$year==2012,'mv_g.m2_logt.minusYr']<-df.mod[df.mod$year==2012,'mv_g.m2_logt'] - int.Diff
+#set up prediction dataframes
+df.pred<-XYPlot_DF(n=100, xVar='PC2_neg1', constantVar='PC1', df=df.mod, mod=mod, re.pred=TRUE)
+df.pred$year<-factor(df.pred$year)
 
 #plot
 pScat.Mv_PC2<-ggplot(data=df.pred, 
                      mapping=aes(x=PC2_neg1, 
-                                 y=ypred.minusYr, 
-                                 ymin=CI.lwr.minusYr, ymax=CI.upr.minusYr))  +  
-  geom_ribbon(alpha=0.4) +
+                                 y=ypred, 
+                                 ymin=CI.lwr, ymax=CI.upr, 
+                                 shape=year, linetype=year, fill=year))  +  
+  geom_ribbon(alpha=0.8) +
   geom_line() +
-  mytheme + ylab('Microstegium biomass (log g/m2)') + xlab('PC2*-1\n(increasing light, decreasing trees)') + 
-  geom_point(data=df.mod, aes(y=mv_g.m2_logt.minusYr, ymin=NULL, ymax=NULL))
+  mytheme + ylab('Microstegium biomass (log g/m2)') + xlab('Forest openness (PC2)') + 
+  geom_point(data=df.mod, aes(y=mv_g.m2_logt, ymin=NULL, ymax=NULL))+
+  scale_shape_manual(values=shapeVec) +
+  scale_linetype_manual(values=linetypeVec) +
+  scale_fill_manual(values=fillVec)
 pScat.Mv_PC2
 
-#save plot
-newfilename<-'pScat_q3.png'
-png(paste(figuresPath,newfilename, sep='/'), units='in', 
-    width = fig.width*1, height = fig.height*1.05, res=fig.res)
-pScat.Mv_PC2
+#make a plot with just high PC1 data
+df.mod_highPC1<-subset(df.mod, factorLevel == 'High moisture & OM (PC1)')
+pScat.Mv_PC2.high.PC1<-ggplot(data=df.pred, 
+                                  mapping=aes(x=PC2_neg1, 
+                                              y=ypred, 
+                                              ymin=CI.lwr, ymax=CI.upr, 
+                                 shape=year, linetype=year, fill=year))  +  
+  geom_ribbon(alpha=0.8) +
+  geom_line() +
+  mytheme + ylab('Microstegium biomass (log g/m2)') + xlab('Forest openness (PC2)') +
+  geom_point(data=df.mod_highPC1, aes(y=mv_g.m2_logt, ymin=NULL, ymax=NULL))+
+  scale_shape_manual(values=shapeVec) +
+  scale_linetype_manual(values=linetypeVec) +
+  scale_fill_manual(values=fillVec)
+pScat.Mv_PC2.high.PC1
+
+
+#save plots
+
+newfilename<-'pScat_q3.pdf'
+pdf(paste(figuresPath,newfilename, sep='/'),
+    width = fig.width*1, height = fig.height*1.05)
+pScat.Mv_PC2 + guides(shape=FALSE, linetype=FALSE, fill=FALSE)
 dev.off()
+
+newfilename<-'pScat_3panelFig.pdf'
+pdf(paste(figuresPath,newfilename, sep='/'), 
+    width = fig.width*2, height = fig.height*2)
+grid.arrange(pScat.Mv_PC2.high.PC1+ guides(shape=FALSE, linetype=FALSE, fill=FALSE), 
+             textGrob(''),
+             pScat.ammonifdDiff_PC2.high.PC1+ guides(shape=FALSE, linetype=FALSE, fill=FALSE),
+             pScat.ammonifdDiff_Mv.high.PC1+ guides(shape=FALSE, linetype=FALSE, fill=FALSE)
+             , ncol=2)
+dev.off()
+
+
+
 
 ```
 
@@ -367,195 +731,43 @@ _________________________________________________________________
 # 4. Q4: What is the relative importance of reference conditions on impact - direct and indirectly
 ```{r q4, echo=FALSE, message=FALSE, warning=FALSE}
 library(nlme)
-
-################
-# Diff Ammonification
-#Model: Additive effects of PC1 and PC2 on invasion impact
-
-#1. prep dataframe
-df.mod<-mod.ammonifd[['df.mod.used']]
-df.full<-merge(df.mod, data.q2)
-diffVarShort<-'ammonifd_T'
-select.diffVar<-paste('Diff',diffVarShort, sep='_')
-selectCols<-c('plotYear','year','mv_g.m2_logt',select.diffVar,'PC1','PC2')
-df<-df.full[,selectCols]
-colnames(df)
-colnames(df)<-c('plotYear','year','mv','impact','PC1','PC2')
-
-#2. look at dataset
-pairs(df)
-
-#3. Fit SEM model
-#mod1ri = Piecewise SEM with random intercept for year - with interations
-
-modlist <- list(
-  lme(mv ~ PC1 + PC2, random=~1|year, data=df),
-  lme(impact ~ mv + PC1 + PC2 + mv:PC1 + mv:PC2 + PC1:PC2, random=~1|year, data=df)
-  )
-
-#can't test the fit because the model is fully saturated
-sem.mod.fit<-sem.fit(modlist, data=df) 
-sem.mod.fit #error message??
-
-#non-standardized path coefs
-coefs<-sem.coefs(modelList=modlist, data=df, standardize="none")
-coefs
-
-#standardized path coefs
-sem.coefs(modelList=modlist, data=df, standardize="scale") #weird error message
-#use manual fxn ... this need to be tweaked
-coefs<-StdPathCoefs(sem.coef.obj=coefs, data=df)
-coefs
-
-#R2 values
-sem.model.fits(modlist)
-
-
-
-
+source('CODE/fxn_FitSEM.R') #function to fix piecewise SEM and save all the necessary info in a list
 
 ################
 # Diff Nitrate
-#Model: Additive effects of PC1 and PC2 on invasion impact
+sem.noi<-FitSEM(df.mod=mod.noi[['df.mod.used']], 
+                diffVarShort='noi_T')
+sem.noi$sem_fit
+sem.noi$coef_nonstd
+sem.noi$coef_std
+sem.noi$r2
 
-#1. prep dataframe
-df.mod<-mod.noi[['df.mod.used']]
-df.full<-merge(df.mod, data.q2)
-diffVarShort<-'noi_T'
-select.diffVar<-paste('Diff',diffVarShort, sep='_')
-selectCols<-c('plotYear','year','mv_g.m2_logt',select.diffVar,'PC1','PC2')
-df<-df.full[,selectCols]
-colnames(df)
-colnames(df)<-c('plotYear','year','mv','impact','PC1','PC2')
-
-#2. look at dataset
-pairs(df)
-
-#3. Fit SEM model
-#mod1ri = Piecewise SEM with random intercept for year - with interations
-modlist <- list(
-  lme(mv ~ PC1 + PC2, random=~1|year, data=df),
-  lme(impact ~ mv + PC1 + PC2 + mv:PC1 + mv:PC2+ PC1:PC2, random=~1|year, data=df)
-  )
-
-#can't test the fit because the model is fully saturated
-sem.mod.fit<-sem.fit(modlist, data=df) 
-sem.mod.fit #error message??
-
-#non-standardized path coefs
-coefs<-sem.coefs(modelList=modlist, data=df, standardize="none")
-coefs
-
-#standardized path coefs
-sem.coefs(modelList=modlist, data=df, standardize="scale") #weird error message
-#use manual fxn ... this need to be tweaked
-coefs<-StdPathCoefs(sem.coef.obj=coefs, data=df)
-coefs
-
-#R2 values
-sem.model.fits(modlist)
-
+################
+# Diff Ammonification
+sem.ammonifd<-FitSEM(df.mod=mod.ammonifd[['df.mod.used']], 
+                diffVarShort='ammonifd_T')
+sem.ammonifd$sem_fit
+sem.ammonifd$coef_nonstd
+sem.ammonifd$coef_std
+sem.ammonifd$r2
 
 ################
 # Diff Nitrification
-#Model: Additive effects of PC1 and PC2 on invasion impact
-
-#1. prep dataframe
-df.mod<-mod.nitrifd[['df.mod.used']]
-df.full<-merge(df.mod, data.q2)
-diffVarShort<-'nitrifd_T'
-select.diffVar<-paste('Diff',diffVarShort, sep='_')
-selectCols<-c('plotYear','year','mv_g.m2_logt',select.diffVar,'PC1','PC2')
-df<-df.full[,selectCols]
-colnames(df)
-colnames(df)<-c('plotYear','year','mv','impact','PC1','PC2')
-
-#2. look at dataset
-pairs(df)
-
-#3. Fit SEM models
-########
-#mod1r = Piecewise SEM with random intercept for year
-mn<-mult.norm(df[,c('PC1','PC2','mv','impact')], chicrit = 0.005)
-mn$Dsq > mn$CriticalDsq #Are Mahalanobis distances greater than the critical value?
-#if the observation's Mahalanobis distance is NOT greater than the critical value, than the observation is NOT an outlier -- correct interpretation?
-
-hist(df$impact) #should I add a constant to make all these values positive??
-hist(df$mv) #this has been log-transformed
-hist(df$PC1) #should I add a constant to make all these values positive??
-hist(df$PC2) #should I add a constant to make all these values positive??
-
-modlist <- list(
-  lme(mv ~ PC1 + PC2, random=~1|year, data=df),
-  lme(impact ~ mv + PC1 + PC2 + mv:PC1 + mv:PC2 + PC1:PC2, random=~1|year, data=df)
-  )
-
-#can't test the fit because the model is fully saturated
-sem.mod.fit<-sem.fit(modlist, data=df) 
-sem.mod.fit
-
-#non-standardized path coefs
-coefs<-sem.coefs(modelList=modlist, data=df, standardize="none")
-coefs
-
-#standardized path coefs
-sem.coefs(modelList=modlist, data=df, standardize="scale") #weird error message
-coefs<-StdCoefs.manual(sem.coef.obj=coefs, data=df)
-coefs
-
-#R2 values
-sem.model.fits(modlist)
-
+sem.nitrifd<-FitSEM(df.mod=mod.nitrifd[['df.mod.used']], 
+                diffVarShort='nitrifd_T')
+sem.nitrifd$sem_fit
+sem.nitrifd$coef_nonstd
+sem.nitrifd$coef_std
+sem.nitrifd$r2
 
 ################
 # Diff Mineralization
-#1. prep dataframe
-df.mod<-mod.minzd[['df.mod.used']]
-df.full<-merge(df.mod, data.q2)
-diffVarShort<-'minzd_T'
-select.diffVar<-paste('Diff',diffVarShort, sep='_')
-selectCols<-c('plotYear','year','mv_g.m2_logt',select.diffVar,'PC1','PC2')
-df<-df.full[,selectCols]
-colnames(df)
-colnames(df)<-c('plotYear','year','mv','impact','PC1','PC2')
-
-#2. look at dataset
-pairs(df)
-
-#3. Fit SEM models
-########
-#mod1r = Piecewise SEM with random intercept for year
-mn<-mult.norm(df[,c('PC1','PC2','mv','impact')], chicrit = 0.005)
-mn$Dsq > mn$CriticalDsq #Are Mahalanobis distances greater than the critical value?
-#if the observation's Mahalanobis distance is NOT greater than the critical value, than the observation is NOT an outlier -- correct interpretation?
-
-hist(df$impact) #should I add a constant to make all these values positive??
-hist(df$mv) #this has been log-transformed
-hist(df$PC1) #should I add a constant to make all these values positive??
-hist(df$PC2) #should I add a constant to make all these values positive??
-
-modlist <- list(
-  lme(mv ~ PC1 + PC2, random=~1|year, data=df),
-  lme(impact ~ mv + PC1 + PC2 + mv:PC1 + mv:PC2 + PC1:PC2, random=~1|year, data=df)
-  )
-
-#can't test the fit because the model is fully saturated
-sem.mod.fit<-sem.fit(modlist, data=df) 
-sem.mod.fit
-
-#non-standardized path coefs
-coefs<-sem.coefs(modelList=modlist, data=df, standardize="none")
-coefs
-
-#standardized path coefs
-sem.coefs(modelList=modlist, data=df, standardize="scale") #weird error message
-coefs<-StdCoefs.manual(sem.coef.obj=coefs, data=df)
-coefs
-
-#R2 values
-sem.model.fits(modlist)
-
-
+sem.minzd<-FitSEM(df.mod=mod.minzd[['df.mod.used']], 
+                diffVarShort='minzd_T')
+sem.minzd$sem_fit
+sem.minzd$coef_nonstd
+sem.minzd$coef_std
+sem.minzd$r2
 
 ```
 
@@ -593,9 +805,10 @@ data.plotVars.wide$plotYear<-paste(as.character(data.plotVars.wide$plotid),
 #1) Run models
 result<-InvEffect(Yvars=plotVars, YvarNames=plotVarNames, df=data.plotVars.wide)
 
+
 #2) Calculate means and save
 data.plotVars.long<-melt(data.plotVars.wide, measure.vars=plotVars, id.vars = c('inv','year','plotid'))
-meanSummary<-ddply(data.plotVars.long, ~variable+inv, summarize,
+meanSummary<-ddply(data.plotVars.long, ~variable+inv+year, summarize,
                    mean=mean(value, na.rm=TRUE),
                    n=sum(!is.na(value)),
                    se=sd(value, na.rm=TRUE)/sqrt(n))
@@ -623,28 +836,32 @@ meanSummary.pretty$name<-meanSummary.pretty$basic.varNames.units
 meanSummary.pretty$name2 <- factor(meanSummary.pretty$name,
                                    levels=c(levels(meanSummary.pretty$name)[1:2],'',
                                             levels(meanSummary.pretty$name)[3:11]))
+meanSummary.pretty$year<-factor(meanSummary.pretty$year)
+meanSummary.pretty$group<-paste(meanSummary.pretty$year, meanSummary.pretty$depth, sep=", ")
+meanSummary.pretty1<-subset(meanSummary.pretty, basic.vars %in% c('soilmoi','som','ph',NA))
 
-p<-ggplot(meanSummary.pretty, aes(x=inv, y=mean, linetype=depth, group=depth)) +
+            
+shapeVec<-c(1,16,16, 1,16,16)
+linetypeVec<-c(2,1,1, 2,1,1)
+colorVec<-c("black","black","black","darkgray","darkgray","darkgray")
+
+p<-ggplot(meanSummary.pretty1, aes(x=inv, y=mean, 
+                                  shape=group, color=group, linetype=group,
+                            group=group)) +
   geom_point(size=3) + ylab(NULL) + xlab('Plot type') +
   geom_errorbar(limits, width=0.2) + geom_line() + 
-  facet_wrap(~name2, scales='free_y', ncol=3, drop=FALSE) + mytheme +
-  scale_linetype_discrete(name='Soil depth',labels=c('0-5cm','5-15cm')) +
-  scale_x_discrete(labels=c('Invaded','Reference'))
+  facet_wrap(~name2, scales='free_y', ncol=3, drop=TRUE) + mytheme +
+  scale_x_discrete(labels=c('Invaded','Reference')) +
+  scale_shape_manual(name='Year and depth', values=shapeVec) + 
+  scale_color_manual(name='Year and depth', values=colorVec) +
+  scale_linetype_manual(name='Year and depth', values=linetypeVec)
 p
 
-g <- ggplotGrob(p )
-## remove empty panels
-g$grobs[names(g$grobs) %in% c("panel3","strip_t3","axis_l3")] <- NULL
-## remove them from the layout
-g$layout <- g$layout[!(g$layout$name %in% c("panel-3","strip_t-3","axis_l-3")),]
-
 ## plot
-grid.newpage()
-grid.draw(g)
-newfilename<-'pScat_plotVars.png'
-png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*3.5, height = fig.height*4, res=fig.res)
-grid.newpage()
-grid.draw(g)
+newfilename<-'pScat_plotVars.pdf'
+pdf(paste(figuresPath,newfilename, sep='/'),
+    width = fig.width*3.5, height = fig.height*4)
+p + guides(shape=FALSE, color=FALSE, linetype=FALSE)
 dev.off()
 ```
 

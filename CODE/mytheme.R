@@ -118,9 +118,5 @@ g_legend<-function(a.gplot){
   return(legend)
 }
 
-#figure theme
-fill.vec<-c(1,1)
-shape.vec<-c(16,17)
-linetype.vec<-c(1,2)
 
 

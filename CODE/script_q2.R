@@ -11,6 +11,7 @@ result<-RefPCA(diffVar.basic=diffVar.basic, refVars=useThese_refVars, df=data.q2
 pPCA.noi<-result[['pPCA.ref']] #save ref ordination plot
 PCvar.noi<-PCA.var.contrib_q2(result.list=result, diffVar.basic=diffVar.basic) #save variable contributions to PCA
 dfmod.noi<-result[['df.mod']] #save dataframe
+dfmod.noi$year<-as.factor(dfmod.noi$year)
 #fit mixed effect models for 0-5cm and 5-15cm
 mod.noi<-ScaleFit_q2(diffVar.basic=diffVar.basic, df.mod=dfmod.noi, modelFormulaCode=modelFormulaCode, externalPercBA_AM=externalPercBA_AM) 
 
@@ -20,6 +21,7 @@ result<-RefPCA(diffVar.basic=diffVar.basic, refVars=useThese_refVars, df=data.q2
 pPCA.ammonifd<-result[['pPCA.ref']] #save ref ordination plot
 PCvar.ammonifd<-PCA.var.contrib_q2(result.list=result, diffVar.basic=diffVar.basic) #save variable contributions to PCA
 dfmod.ammonifd<-result[['df.mod']] #save dataframe
+dfmod.ammonifd$year<-as.factor(dfmod.ammonifd$year)
 #fit mixed effect models for 0-5cm and 5-15cm
 mod.ammonifd<-ScaleFit_q2(diffVar.basic=diffVar.basic, df.mod=dfmod.ammonifd, modelFormulaCode=modelFormulaCode, externalPercBA_AM=externalPercBA_AM) 
 
@@ -29,6 +31,7 @@ result<-RefPCA(diffVar.basic=diffVar.basic, refVars=useThese_refVars, df=data.q2
 pPCA.nitrifd<-result[['pPCA.ref']] #save ref ordination plot
 PCvar.nitrifd<-PCA.var.contrib_q2(result.list=result, diffVar.basic=diffVar.basic) #save variable contributions to PCA
 dfmod.nitrifd<-result[['df.mod']] #save dataframe
+dfmod.nitrifd$year<-as.factor(dfmod.nitrifd$year)
 #fit mixed effect models for 0-5cm and 5-15cm
 mod.nitrifd<-ScaleFit_q2(diffVar.basic=diffVar.basic, df.mod=dfmod.nitrifd, modelFormulaCode=modelFormulaCode, externalPercBA_AM=externalPercBA_AM) 
 
@@ -39,9 +42,10 @@ result<-RefPCA(diffVar.basic=diffVar.basic, refVars=useThese_refVars, df=data.q2
 pPCA.minzd<-result[['pPCA.ref']] #save ref ordination plot
 PCvar.minzd<-PCA.var.contrib_q2(result.list=result, diffVar.basic=diffVar.basic) #save variable contributions to PCA
 dfmod.minzd<-result[['df.mod']] #save dataframe
+dfmod.minzd$year<-as.factor(dfmod.minzd$year)
 #fit mixed effect models for 0-5cm and 5-15cm
 mod.minzd<-ScaleFit_q2(diffVar.basic=diffVar.basic, df.mod=dfmod.minzd, modelFormulaCode=modelFormulaCode, externalPercBA_AM=externalPercBA_AM) 
-
+mod.minzd
 
 
 

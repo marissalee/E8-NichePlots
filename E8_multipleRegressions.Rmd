@@ -1,0 +1,181 @@
+---
+title: "E8 Multiple Regressions"
+author: "Marissa Lee"
+date: "July 21, 2016"
+output: pdf_document
+---
+
+```{r setup, echo=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(cache=TRUE)
+
+#LIBRARIES
+library(coefplot2) #for mixed-effects coefficent plots
+library(lme4) #for mixed-effects models
+library(lmerTest) #for lmer p-values
+
+#CUSTOM FUNCTIONS
+
+#THEME
+
+#IMPORT RAW DATA
+data.q2<-read.table("DATA/DATA_SYNTHESIZED/data_d_q2.txt", header=TRUE, sep="\t",
+                 stringsAsFactors = FALSE)
+```
+
+```{r clean, echo=FALSE, message=FALSE}
+data.q2.modif<-data.q2
+PLOTID<-sort(as.numeric(unique(data.q2$plotid)))
+i<-0
+for (i in 1:length(PLOTID)){
+  #save 2012 percpar value
+  val.2012<-data.q2.modif[data.q2.modif$plotid==PLOTID[i] & data.q2.modif$year=='2012','percpar']
+  
+  #put 2012 percpar value into the 2013 slot for that plotid
+  data.q2.modif[data.q2.modif$plotid==PLOTID[i] & data.q2.modif$year=='2013','percpar']<-val.2012
+}
+#data.q2.modif[,c('plotid','year','percpar')] #check this
+```
+
+# Predictor variables
+- soil moisture
+- SOM
+- soil pH
+- non-M.v. understory biomass
+- litter biomass
+- understory light availability
+- number of trees
+- tree basal area
+- M.v. biomass 
+
+Note1: Soil measurements from the same depth are highly correlated, so I only used predictor variables from the soil depth that corresponded to the response variable soil depth.  
+
+Note2: There were missing values in the second year for understory light availability, so I just have both years filled with 2012 values so that I can scale and center the predictors.  
+
+# Predictor variable correlations
+- soil moisture and SOM (0-5cm: 0.68, 5-15cm: 0.64)
+- number of trees and non-M.v. understory biomass (-0.55)
+- number of trees and understory light (-0.61)
+- tree basal area and non-M.v. understory biomass (0.46)
+- NOT correlated: number of trees and tree basal area (0.07)
+```{r predictors, echo=FALSE, include=FALSE}
+#predictor terms
+predVars_T<-data.q2.modif[,c('soilmoi_T','som_T','ph_T',
+                           'nat_g.m2','litter_g.m2',
+                           'percpar','nTrees','BA_total',
+                           'mv_g.m2_logt')]
+predVars_B<-data.q2.modif[,c('soilmoi_B','som_B','ph_B',
+                           'nat_g.m2','litter_g.m2',
+                           'percpar','nTrees','BA_total',
+                           'mv_g.m2_logt')]
+
+longnames <- c("soil moisture","soil OM","soil pH",
+                "non-M.v. biomass","litter biomass","understory light","number of trees","tree basal area",
+               "M.v. biomass")
+
+#scale and center
+predVarsT.scaled<-scale(predVars_T)
+predVarsB.scaled<-scale(predVars_B)
+
+#look at cov matrix
+round(cov(predVarsT.scaled), digits=2)
+round(cov(predVarsB.scaled), digits=2)
+
+#dataset
+data.q2.modif1_T<-data.frame(data.q2[,c('plotid','year',
+                                        'Diff_noi_T', 'Diff_ammonifd_T',
+                                        'Diff_nitrifd_T', 
+                                        'Diff_minzd_T')],
+                             predVarsT.scaled)
+data.q2.modif1_B<-data.frame(data.q2[,c('plotid','year',
+                                        'Diff_noi_B', 'Diff_ammonifd_B',
+                                        'Diff_nitrifd_B', 
+                                        'Diff_minzd_B')],
+                             predVarsB.scaled)
+
+```
+
+# Model formulation
+Change in nitrification (Inv-Ref) ~ predictors + (1|year)
+
+# Regression estimates
+Plots show +/- 95% CI for the conditional fixed effect regression estimate (inner) and marginal estimate (outer)
+```{r nitrif, echo=FALSE, fig.width=3.8, fig.height=3.8}
+#fit model (0-5cm, T)
+modT.nitrif<-lmer(Diff_nitrifd_T ~ 
+                    soilmoi_T+som_T+ph_T+nat_g.m2+
+                    litter_g.m2+percpar+nTrees+BA_total+
+                    mv_g.m2_logt + 
+                    (1|year), data=data.q2.modif1_T)
+#summary(modT.nitrif)
+coefplot2(modT.nitrif, varnames=longnames, intercept=FALSE, main="Nitrif. (inv-ref) 0-5cm")
+
+
+#fit model (5-15cm, B)
+modB.nitrif<-lmer(Diff_nitrifd_B ~ 
+                    soilmoi_B+som_B+ph_B+nat_g.m2+
+                    litter_g.m2+percpar+nTrees+BA_total+
+                    mv_g.m2_logt + 
+                    (1|year), data=data.q2.modif1_B)
+#summary(modB.nitrif)
+coefplot2(modB.nitrif, varnames=longnames, intercept=FALSE, main="Nitrif. (inv-ref) 5-15cm")
+```
+
+```{r minz, echo=FALSE,fig.width=3.8, fig.height=3.8}
+#fit model (0-5cm, T)
+modT.minzd<-lmer(Diff_minzd_T ~ 
+                    soilmoi_T+som_T+ph_T+nat_g.m2+
+                    litter_g.m2+percpar+nTrees+BA_total+
+                    mv_g.m2_logt + 
+                    (1|year), data=data.q2.modif1_T)
+#summary(modT.minzd)
+coefplot2(modT.minzd, varnames=longnames, intercept=FALSE, main="Minz. (inv-ref) 0-5cm")
+
+#fit model (5-15cm, B)
+modB.minzd<-lmer(Diff_minzd_B ~ 
+                    soilmoi_B+som_B+ph_B+nat_g.m2+
+                    litter_g.m2+percpar+nTrees+BA_total+
+                    mv_g.m2_logt + 
+                    (1|year), data=data.q2.modif1_B)
+#summary(modB.minzd)
+coefplot2(modB.minzd, varnames=longnames, intercept=FALSE, main="Minz. (inv-ref) 5-15cm")
+```
+
+```{r noi, echo=FALSE,fig.width=3.8, fig.height=3.8}
+#fit model (0-5cm, T)
+modT.noi<-lmer(Diff_noi_T ~ 
+                    soilmoi_T+som_T+ph_T+nat_g.m2+
+                    litter_g.m2+percpar+nTrees+BA_total+
+                    mv_g.m2_logt + 
+                    (1|year), data=data.q2.modif1_T)
+#summary(modT.minzd)
+coefplot2(modT.noi, varnames=longnames, intercept=FALSE, main="NO3 (inv-ref) 0-5cm")
+
+#fit model (5-15cm, B)
+modB.noi<-lmer(Diff_noi_B ~ 
+                    soilmoi_B+som_B+ph_B+nat_g.m2+
+                    litter_g.m2+percpar+nTrees+BA_total+
+                    mv_g.m2_logt + 
+                    (1|year), data=data.q2.modif1_B)
+#summary(modB.minzd)
+coefplot2(modB.noi, varnames=longnames, intercept=FALSE, main="NO3 (inv-ref) 5-15cm")
+```
+
+```{r ammonifd, echo=FALSE,fig.width=3.8, fig.height=3.8}
+#fit model (0-5cm, T)
+modT.ammonifd<-lmer(Diff_ammonifd_T ~ 
+                    soilmoi_T+som_T+ph_T+nat_g.m2+
+                    litter_g.m2+percpar+nTrees+BA_total+
+                    mv_g.m2_logt + 
+                    (1|year), data=data.q2.modif1_T)
+#summary(modT.minzd)
+coefplot2(modT.ammonifd, varnames=longnames, intercept=FALSE, main="Ammonif. (inv-ref) 0-5cm")
+
+#fit model (5-15cm, B)
+modB.ammonifd<-lmer(Diff_ammonifd_B ~ 
+                    soilmoi_B+som_B+ph_B+nat_g.m2+
+                    litter_g.m2+percpar+nTrees+BA_total+
+                    mv_g.m2_logt + 
+                    (1|year), data=data.q2.modif1_B)
+#summary(modB.minzd)
+coefplot2(modB.ammonifd, varnames=longnames, intercept=FALSE, main="Ammonif. (inv-ref) 5-15cm")
+```

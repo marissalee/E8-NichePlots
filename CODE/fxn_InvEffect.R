@@ -3,6 +3,8 @@
 # 
 InvEffect<-function(Yvars, YvarNames, df){
   
+  df$inv<-factor(df$inv, levels = c('N','I'))
+  
   summary.list<-list()
   posthoc.list<-list()
   anova.list<-list()
@@ -12,9 +14,12 @@ InvEffect<-function(Yvars, YvarNames, df){
     
     curr.Yvar<-as.character(Yvars[i])
     y<-df[,curr.Yvar]
-    df$inv<-factor(df$inv, levels = c('N','I'))
+    inv<-df$inv
+    year<-df$year
+    df.tmp<-data.frame(y,inv,year)
+    
     #regression model
-    mod<-lmer(y~inv + (1|plotYear), data=df)
+    mod<-lmer(y~inv + (1|year), data=df.tmp)
     summary.list[[i]]<-summary(mod)
     anova.list[[i]]<-anova(mod)
     
@@ -22,8 +27,8 @@ InvEffect<-function(Yvars, YvarNames, df){
     posthoc.list[[i]]<-difflsmeans(mod)$diffs.lsmeans.table
     
     #plot
-    df$year<-factor(df$year)
-    p<-ggplot(df, aes_string(x='inv', y=curr.Yvar, color='year')) + geom_boxplot() + 
+    df.tmp$year<-factor(df.tmp$year)
+    p<-ggplot(df.tmp, aes(x=inv, y=y, color=year)) + geom_boxplot() + 
       mytheme + xlab(NULL) + ylab(NULL) + ggtitle(YvarNames[i]) + guides(color=FALSE)
     figure.list[[i]]<-p
   }

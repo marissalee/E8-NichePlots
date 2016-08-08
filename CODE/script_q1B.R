@@ -17,10 +17,11 @@ result<-InvEffect(Yvars=variables, YvarNames=variableNames, df=data.vars.wide.rm
 
 #2) Calculate means and save
 data.vars.rm.long<-melt(data.vars.wide.rm, measure.vars=nVars, id.vars = c('inv','year','plotid'))
-meanSummary<-ddply(data.vars.rm.long, ~variable+inv, summarize,
+meanSummary<-ddply(data.vars.rm.long, ~variable+inv+year, summarize,
                    mean=mean(value),
                    n=length(value),
                    se=sd(value)/sqrt(n))
+
 meanSummary[,c('mean','se')]<-round(meanSummary[,c('mean','se')], digits=2)
 colnames(meanSummary)[colnames(meanSummary) == 'variable']<-'nVars'
 newfilename<-'meanSummary_q1.txt'
@@ -43,31 +44,44 @@ meanSummary.pretty$depth<-mapvalues(meanSummary.pretty$depth,
                                     from = c('T','B'), to = c('0-5cm','5-15cm'))
 meanSummary.pretty$inv<-mapvalues(meanSummary.pretty$inv, from = inv_order, to = invNames)
 basic.nVarNames2<-paste(basic.nVarNames, units)
-lineVec<-c(1,2)
-#shapeVec<-c(16,17)
+shapeVec<-c(16,1,16,1)
+linetypeVec<-c(1,2,1,2)
+colorVec<-c("black","black","darkgray","darkgray")
 #ii) loop through each soil response variable
 figure.list<-list()
 i<-0
 for(i in 1:length(basic.nVars)){
   df.current<-meanSummary.pretty[meanSummary.pretty$basic.nVars ==  basic.nVars[i],]
-  p<-ggplot(df.current, aes(x=inv, y=mean, linetype=depth, group=depth)) + 
-    geom_point(size=3) + geom_errorbar(limits, width=0.2) + geom_line() + 
+  df.current$year<-factor(df.current$year)
+  df.current$group<-paste(df.current$year, df.current$depth, sep=", ")
+  p<-ggplot(df.current, aes(x=inv, y=mean, 
+                            shape=group, color=group, linetype=group,
+                            group=group)) + 
+    geom_point(size=2) + geom_errorbar(limits, width=0.2) + geom_line() + 
     mytheme + xlab(NULL) + ylab(basic.nVarNames2[i]) + 
-    scale_linetype_manual(name='Depth', values=lineVec) + 
-    guides(linetype=FALSE) 
+    scale_shape_manual(name='Year and depth', values=shapeVec) + 
+    scale_color_manual(name='Year and depth', values=colorVec) +
+    scale_linetype_manual(name='Year and depth', values=linetypeVec) +
+    guides(shape=FALSE, color=FALSE, linetype=FALSE)
   figure.list[[i]]<-p
 }
 names(figure.list)<-basic.nVars
+
 #iii) extract the legend
-pleg <- ggplot(df.current, aes(x=inv, y=mean, linetype=depth, group=depth)) + 
-  geom_point() + geom_errorbar(limits, width=0.2) + geom_line() + 
+pleg <- ggplot(df.current, aes(x=inv, y=mean, 
+                          shape=group, color=group, linetype=group,
+                          group=group)) + 
+  geom_point(size=2) + geom_errorbar(limits, width=0.2) + geom_line() + 
   mytheme + xlab(NULL) + ylab(basic.nVarNames2[i]) + 
-  scale_linetype_manual(name='Depth', values=lineVec) + 
-  theme(legend.key.width=unit(2.5, 'lines'))
+  scale_shape_manual(name='Year and depth', values=shapeVec) + 
+  scale_color_manual(name='Year and depth', values=colorVec) +
+  scale_linetype_manual(name='Year and depth', values=linetypeVec) +
+  theme(legend.key.width=unit(2, 'lines'), legend.title=element_text(size=8))
 leg1Grob<-g_legend(pleg)
+
 #iv) put panels together and save
-newfilename<-'pScat_q1.png'
-png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*3, height = fig.height*2, res=fig.res)
+newfilename<-'pScat_q1.pdf'
+pdf(paste(figuresPath,newfilename, sep='/'), width = fig.width*2, height = fig.height*1.2)
 grid.arrange(
   figure.list[['nhi']] + ylim(c(0,4)),
   figure.list[['noi']] + ylim(c(0,4)),

@@ -12,7 +12,6 @@ plotTrees.dict<-read.table("DATA/e8_plotTrees_dictionary.txt", header=TRUE, sep=
 timeline<-read.table("DATA/e8_timeline.txt", header=TRUE, sep="\t", stringsAsFactors = FALSE)
 phData<-read.table("DATA/e8_ph.txt", header=TRUE, sep="\t", stringsAsFactors = FALSE)
 
-
 ##############
 #A. Clean and merge
 ##############
@@ -33,9 +32,8 @@ soilData_c<-soilData_cast
 # PH DATA
 phData$plothalfid1<-paste(phData$inv, phData$plotid, sep="_") #add new identifiers
 #average the 2 pH values
-colnames(phData)
 sum(is.na(phData[,c('ph_1','ph_2')])) #good.  none missing
-phData$ph<- phData$ph_1 + phData$ph_2 /2
+phData$ph<- (phData$ph_1 + phData$ph_2) /2
 #reshape so that each depth x meas has its own column
 phData_pruned<-phData[,c('year','plothalfid1','depth','plotid','inv','ph')]
 phData_c <- dcast(phData_pruned, plotid + plothalfid1 + inv + year ~ depth, value.var="ph")

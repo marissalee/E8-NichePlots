@@ -175,10 +175,10 @@ data.PCA<-data.frame(plotInvYear=rownames(PCA.res$x), PCA.res$x)
 data.vars.PCA<-data.PCA[,c(1:3)]
 data.vars.PCA<-merge(data.vars.PCA, data.vars.wide.rm)
 plots<-ggbiplot_custom(pcobj=PCA.res, df=data.vars.PCA)
-plots
+plots + xlim(-2,3)
 newfilename<-'PCA_plotrefVars_points.png'
-png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*2, height = fig.height*2, res=fig.res)
-plots
+png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*2.25, height = fig.height*2.25, res=fig.res)
+plots + xlim(-2,3)
 dev.off()
 
 #variable contributions to PC1 and PC2

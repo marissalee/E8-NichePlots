@@ -41,3 +41,30 @@ QuickReshape1<-function(variables, variableNames, select.inv){
   
   return(results)
 }
+
+#fxn to look up raw variable values that correspond to min/max PC values
+PullPCVals<-function(df, orig.df, PC, RefVars, min.or.max){
+  
+  #find the min/max observation
+  if(min.or.max=='min'){
+    pc.val<-min(df.tmp[,PC])
+  }
+  if(min.or.max=='max'){
+    pc.val<-max(df.tmp[,PC])
+  }
+  
+  #identify plotid and year of that observation
+  obs.val<-as.character(df[df[,PC]==pc.val,'plotYear'])
+  plotid.val<-strsplit(obs.val, "_")[[1]][1]
+  year.val<-strsplit(obs.val, "_")[[1]][2]
+  
+  #identify RefVars for that observation plotid in the original dataset
+  result<-orig.df[orig.df$plotid==plotid.val & 
+                    orig.df$year==year.val & 
+                    orig.df$inv=='N' & 
+                    orig.df$variable %in% c(RefVars),
+                  c('variable','value')]
+  
+  return(result)
+  
+}
