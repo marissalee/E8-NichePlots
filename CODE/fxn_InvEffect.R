@@ -3,6 +3,10 @@
 # 
 InvEffect<-function(Yvars, YvarNames, df){
   
+  #Yvars=variables
+  #YvarNames=variableNames
+  #df=data.vars.wide.rm
+  
   df$inv<-factor(df$inv, levels = c('N','I'))
   
   summary.list<-list()
@@ -40,19 +44,20 @@ InvEffect<-function(Yvars, YvarNames, df){
   #posthoc summary
   posthocSummary<-ldply(lapply(posthoc.list, data.frame))
   posthocSummary[,-1]<-round(posthocSummary[,-1], digits=4)
-  posthocSummary<-rename(posthocSummary, c(.id='yVar'))
+  colnames(posthocSummary)[1]<-'yVar'
   posthocSummary$terms<-unlist(lapply(posthoc.list, row.names))
   
   #summary summary
   summarySummary<-ldply(lapply(summary.list, 'coefficients'))
   summarySummary[,-1]<-round(summarySummary[,-1], digits=4)
-  summarySummary<-rename(summarySummary, c(.id='yVar'))
+  colnames(summarySummary)[1]<-'yVar'
   summarySummary$terms<-unlist(lapply(lapply(summary.list, 'coefficients'), row.names))
   
   #anova summary
   anovaSummary<-ldply(lapply(anova.list, data.frame))
   anovaSummary[,-1]<-round(anovaSummary[,-1], digits=4)
-  anovaSummary<-rename(anovaSummary, c(.id='yVar', Pr..F.='pValue'))
+  colnames(anovaSummary)[1]<-'yVar'
+  colnames(anovaSummary)[7]<-'pValue'
   anovaSummary$terms<-unlist(lapply(anova.list, row.names))
   
   results<-list(summarySummary=summarySummary, posthocSummary=posthocSummary,

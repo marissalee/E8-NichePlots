@@ -43,6 +43,7 @@ meanSummary.pretty$depth<-factor(meanSummary.pretty$depth, levels=c('T','B'))
 meanSummary.pretty$depth<-mapvalues(meanSummary.pretty$depth, 
                                     from = c('T','B'), to = c('0-5cm','5-15cm'))
 meanSummary.pretty$inv<-mapvalues(meanSummary.pretty$inv, from = inv_order, to = invNames)
+meanSummary.pretty$inv<-factor(meanSummary.pretty$inv, levels=c("Reference","Invaded"))
 basic.nVarNames2<-paste(basic.nVarNames, units)
 shapeVec<-c(16,1,16,1)
 linetypeVec<-c(1,2,1,2)
@@ -63,6 +64,7 @@ for(i in 1:length(basic.nVars)){
     scale_color_manual(name='Year and depth', values=colorVec) +
     scale_linetype_manual(name='Year and depth', values=linetypeVec) +
     guides(shape=FALSE, color=FALSE, linetype=FALSE)
+  p
   figure.list[[i]]<-p
 }
 names(figure.list)<-basic.nVars

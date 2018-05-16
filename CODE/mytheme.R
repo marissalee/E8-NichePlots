@@ -4,13 +4,13 @@
 #SAVE FIGURES AND TABLES
 ####################
 #FIGURES
-figuresPath<-file.path(getwd()[1], "FIGURES_TABLES") #where to put the saved plots
+figuresPath<-file.path("output/") #where to put the saved plots
 fig.height<-2.5 #inches
 fig.width<- 2.5 #inches
 fig.res<-300
 
 #SYNTHESIZED DATAFRAMES
-synthdataPath<-file.path(getwd()[1], "DATA", "DATA_SYNTHESIZED") #where to put the clean dataframes
+synthdataPath<-file.path("data", "DATA_SYNTHESIZED") #where to put the clean dataframes
 
 
 ####################

@@ -5,8 +5,6 @@ date: "October 23, 2015"
 output: pdf_document
 ---
 
-**Filename: E8_main.Rmd'**
-
 _________________________________________________________________
 # 0. Import, clean, merge, load fxns
 ```{r libraries, echo=FALSE}
@@ -54,6 +52,13 @@ source('CODE/script_cleanMerge.R')
 #decide what dataset to use
 data.choice<-data_d
 
+#summarize mv biomass
+colnames(data.choice)
+unique(data.choice$variable)
+data.choice %>% 
+  filter(variable=="mv_g.m2") %>%
+  group_by(inv) %>%
+  summarize(mean=mean(value))
 
 ```
 
@@ -735,6 +740,7 @@ source('CODE/fxn_FitSEM.R') #function to fix piecewise SEM and save all the nece
 
 ################
 # Diff Nitrate
+str(mod.noi)
 sem.noi<-FitSEM(df.mod=mod.noi[['df.mod.used']], 
                 diffVarShort='noi_T')
 sem.noi$sem_fit
@@ -840,7 +846,8 @@ meanSummary.pretty$year<-factor(meanSummary.pretty$year)
 meanSummary.pretty$group<-paste(meanSummary.pretty$year, meanSummary.pretty$depth, sep=", ")
 meanSummary.pretty1<-subset(meanSummary.pretty, basic.vars %in% c('soilmoi','som','ph',NA))
 
-            
+meanSummary.pretty1$inv
+meanSummary.pretty1$inv<-factor(meanSummary.pretty1$inv, levels=c("N","I"))            
 shapeVec<-c(1,16,16, 1,16,16)
 linetypeVec<-c(2,1,1, 2,1,1)
 colorVec<-c("black","black","black","darkgray","darkgray","darkgray")
@@ -849,19 +856,20 @@ p<-ggplot(meanSummary.pretty1, aes(x=inv, y=mean,
                                   shape=group, color=group, linetype=group,
                             group=group)) +
   geom_point(size=3) + ylab(NULL) + xlab('Plot type') +
+  scale_x_discrete(labels=c('Reference','Invaded')) +
   geom_errorbar(limits, width=0.2) + geom_line() + 
   facet_wrap(~name2, scales='free_y', ncol=3, drop=TRUE) + mytheme +
-  scale_x_discrete(labels=c('Invaded','Reference')) +
   scale_shape_manual(name='Year and depth', values=shapeVec) + 
   scale_color_manual(name='Year and depth', values=colorVec) +
   scale_linetype_manual(name='Year and depth', values=linetypeVec)
 p
 
+
 ## plot
 newfilename<-'pScat_plotVars.pdf'
 pdf(paste(figuresPath,newfilename, sep='/'),
-    width = fig.width*3.5, height = fig.height*4)
-p + guides(shape=FALSE, color=FALSE, linetype=FALSE)
+    width = fig.width*4, height = fig.height*3)
+p 
 dev.off()
 ```
 

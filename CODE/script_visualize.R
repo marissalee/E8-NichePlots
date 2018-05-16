@@ -23,13 +23,13 @@ nmdsResult<-NMDSplots(nmds=mod_NMDS,
 #just points
 nmdsResult[['p']] + xlim(-10,8) + ylim(-5,5) + coord_equal()
 newfilename<-'NMDS_plotNvars_points.png'
-png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*3, height = fig.height*3, res=fig.res)
+png(paste("output/",newfilename, sep='/'), units='in', width = fig.width*3, height = fig.height*3, res=fig.res)
 nmdsResult[['p']] + xlim(-10,8) + ylim(-5,5) + coord_equal()
 dev.off()
 #site vectors
 nmdsResult[['p.vecs']] + xlim(-10,8) + ylim(-5,5) + coord_equal()
 newfilename<-'NMDS_plotNvars_vecs.png'
-png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*3, height = fig.height*3, res=fig.res)
+png(paste("output/",newfilename, sep='/'), units='in', width = fig.width*3, height = fig.height*3, res=fig.res)
 nmdsResult[['p.vecs']] + xlim(-10,8) + ylim(-5,5) + coord_equal()
 dev.off()
 
@@ -57,13 +57,13 @@ plots<-ggbiplot_q1(pcobj=PCA.res, df=data.vars.PCA)
 #just points
 plots[['pEllipseIN1']]
 newfilename<-'PCA_plotNvars_points.png'
-png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*2, height = fig.height*2, res=fig.res)
+png(paste("output/",newfilename, sep='/'), units='in', width = fig.width*2, height = fig.height*2, res=fig.res)
 plots[['pEllipseIN1']] + xlim(c(-3,4)) + ylim(c(-4,2)) + coord_equal()
 dev.off()
 #site vectors
 plots[['pEllipseIN2']]
 newfilename<-'PCA_plotNvars_vecs.png'
-png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*2, height = fig.height*2, res=fig.res)
+png(paste("output/",newfilename, sep='/'), units='in', width = fig.width*2, height = fig.height*2, res=fig.res)
 plots[['pEllipseIN2']] + xlim(c(-3,4)) + ylim(c(-4,2)) + coord_equal()
 dev.off()
 
@@ -71,7 +71,7 @@ dev.off()
 PCvar<-PCA.var.contrib_q1(pca.obj=PCA.res)
 PCvar
 newfilename<-'PCvar_plotNvars.txt'
-write.table(PCvar, file=paste(figuresPath,newfilename, sep='/'), sep='\t')
+write.table(PCvar, file=paste("output/",newfilename, sep='/'), sep='\t')
 
 
 
@@ -98,13 +98,13 @@ nmdsResult<-NMDSplots(nmds=mod_NMDS, data.vars.wide.rm=data.vars.wide.rm,
 #just points
 nmdsResult[['p']] + xlim(c(-1900,1500)) + ylim(c(-500,500)) + coord_equal()
 newfilename<-'NMDS_plotallVars_points.png'
-png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*2, height = fig.height*2, res=fig.res)
+png(paste("output/",newfilename, sep='/'), units='in', width = fig.width*2, height = fig.height*2, res=fig.res)
 nmdsResult[['p']] + xlim(c(-1900,1500)) + ylim(c(-500,500)) + coord_equal()
 dev.off()
 #site vectors
 nmdsResult[['p.vecs']] + xlim(c(-1900,1500)) + ylim(c(-500,500)) + coord_equal()
 newfilename<-'NMDS_plotallVars_vecs.png'
-png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*2, height = fig.height*2, res=fig.res)
+png(paste("output/",newfilename, sep='/'), units='in', width = fig.width*2, height = fig.height*2, res=fig.res)
 nmdsResult[['p.vecs']] + xlim(c(-1900,1500)) + ylim(c(-500,500)) + coord_equal()
 dev.off()
 
@@ -118,13 +118,13 @@ plots<-ggbiplot_q1(pcobj=PCA.res, df=data.vars.PCA)
 #just points
 plots[['pEllipseIN1']]
 newfilename<-'PCA_plotallVars_points.png'
-png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*2, height = fig.height*2, res=fig.res)
+png(paste("output/",newfilename, sep='/'), units='in', width = fig.width*2, height = fig.height*2, res=fig.res)
 plots[['pEllipseIN1']] 
 dev.off()
 #site vectors
 plots[['pEllipseIN2']]
 newfilename<-'PCA_plotallVars_vecs.png'
-png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*2, height = fig.height*2, res=fig.res)
+png(paste("output/",newfilename, sep='/'), units='in', width = fig.width*2, height = fig.height*2, res=fig.res)
 plots[['pEllipseIN2']] 
 dev.off()
 
@@ -132,7 +132,7 @@ dev.off()
 PCvar<-PCA.var.contrib_q1(pca.obj=PCA.res)
 PCvar
 newfilename<-'PCvar_plotallVars.txt'
-write.table(PCvar, file=paste(figuresPath,newfilename, sep='/'), sep='\t')
+write.table(PCvar, file=paste("output/",newfilename, sep='/'), sep='\t')
 
 
 ### everything measured in reference plots only ###
@@ -164,7 +164,7 @@ p<-ggplot(sampleScores, aes(x=MDS1, y=MDS2)) +
   mytheme
 p + xlim(-2100,1300) + ylim(c(-500,500)) + coord_equal()
 newfilename<-'NMDS_refVars_points.png'
-png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*2, height = fig.height*2, res=fig.res)
+png(paste("output/",newfilename, sep='/'), units='in', width = fig.width*2, height = fig.height*2, res=fig.res)
 p + xlim(-2100,1300) + ylim(c(-500,500)) + coord_equal()
 dev.off()
 
@@ -177,7 +177,7 @@ data.vars.PCA<-merge(data.vars.PCA, data.vars.wide.rm)
 plots<-ggbiplot_custom(pcobj=PCA.res, df=data.vars.PCA)
 plots + xlim(-2,3)
 newfilename<-'PCA_plotrefVars_points.png'
-png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*2.25, height = fig.height*2.25, res=fig.res)
+png(paste("output/",newfilename, sep='/'), units='in', width = fig.width*2.25, height = fig.height*2.25, res=fig.res)
 plots + xlim(-2,3)
 dev.off()
 
@@ -185,5 +185,5 @@ dev.off()
 PCvar<-PCA.var.contrib_q1(pca.obj=PCA.res)
 PCvar
 newfilename<-'PCvar_plotrefVars.txt'
-write.table(PCvar, file=paste(figuresPath,newfilename, sep='/'), sep='\t')
+write.table(PCvar, file=paste("output/",newfilename, sep='/'), sep='\t')
 

@@ -89,12 +89,12 @@ pDistb_percpar_logt<-ggplot(data, aes(y=log(percpar), x=plotid, color=yearInv, l
   scale_color_manual(name='Inv & Year', values=c('red','darkorange','yellow','blue','darkblue','black'))
 #save plots
 newfilename<-'pDistb_percpar'
-png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*4, height = fig.height*4, res=fig.res)
+png(paste("output/",newfilename, sep='/'), units='in', width = fig.width*4, height = fig.height*4, res=fig.res)
 pDistb_percpar
 dev.off()
 #save plot
 newfilename<-'pDistb_percpar_logt'
-png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*4, height = fig.height*4, res=fig.res)
+png(paste("output/",newfilename, sep='/'), units='in', width = fig.width*4, height = fig.height*4, res=fig.res)
 pDistb_percpar_logt
 dev.off()
 #decided to aggregate by year so that each plothalfid1 has 1 percpar value for last 2 years
@@ -143,7 +143,7 @@ pHist.depth<-ggplot(data.1213_melted_soilVars, aes(x=value, fill=depth)) +
   ggtitle("Histogram of soil measurement values by soil depth and year")
 #save plot
 newfilename<-'pHist_depth.png'
-png(paste(figuresPath,newfilename, sep='/'), units='in', width = fig.width*4, height = fig.height*4, res=fig.res)
+png(paste("output/",newfilename, sep='/'), units='in', width = fig.width*4, height = fig.height*4, res=fig.res)
 pHist.depth
 dev.off()
 
@@ -169,7 +169,7 @@ data_m_woBT_e<-data_m_woBT[!(data_m_woBT$year %in% c(2012,2013) & data_m_woBT$va
 data_m_woBT_e$note<-NA
 
 #make a dataset with the correctly-aggregated data and comparable column names to data_m_woBT
-summ.data.1213_melted_soilVars<-rename(summ.data.1213_melted_soilVars, replace=c("new.value" = "value")) #rename new.value -> value
+colnames(summ.data.1213_melted_soilVars)[colnames(summ.data.1213_melted_soilVars)=="new.value"]<-"value"
 summ.data.1213_melted_soilVars$variable<-paste(summ.data.1213_melted_soilVars$measCat, '_F',sep="")#measCat items should be ammended with '_F' to indicate that the values are representative of the full soil core depth... put this in a new column called 'variable'
 summ.data.1213_melted_soilVars<-summ.data.1213_melted_soilVars[,c('plotid','plothalfid1','inv','year','variable','value','note')]#get rid of 'n' and 'measCat' columns
 

@@ -9,7 +9,7 @@ output: pdf_document
 knitr::opts_chunk$set(cache=TRUE)
 
 #LIBRARIES
-library(coefplot2) #for mixed-effects coefficent plots
+library(coefplot) #for mixed-effects coefficent plots
 library(lme4) #for mixed-effects models
 library(lmerTest) #for lmer p-values
 
@@ -107,7 +107,7 @@ modT.nitrif<-lmer(Diff_nitrifd_T ~
                     mv_g.m2_logt + 
                     (1|year), data=data.q2.modif1_T)
 #summary(modT.nitrif)
-coefplot2(modT.nitrif, varnames=longnames, intercept=FALSE, main="Nitrif. (inv-ref) 0-5cm")
+coefplot(modT.nitrif, varnames=longnames, intercept=FALSE, main="Nitrif. (inv-ref) 0-5cm")
 
 
 #fit model (5-15cm, B)
@@ -117,7 +117,7 @@ modB.nitrif<-lmer(Diff_nitrifd_B ~
                     mv_g.m2_logt + 
                     (1|year), data=data.q2.modif1_B)
 #summary(modB.nitrif)
-coefplot2(modB.nitrif, varnames=longnames, intercept=FALSE, main="Nitrif. (inv-ref) 5-15cm")
+coefplot(modB.nitrif, varnames=longnames, intercept=FALSE, main="Nitrif. (inv-ref) 5-15cm")
 ```
 
 ```{r minz, echo=FALSE,fig.width=3.8, fig.height=3.8}
@@ -128,7 +128,7 @@ modT.minzd<-lmer(Diff_minzd_T ~
                     mv_g.m2_logt + 
                     (1|year), data=data.q2.modif1_T)
 #summary(modT.minzd)
-coefplot2(modT.minzd, varnames=longnames, intercept=FALSE, main="Minz. (inv-ref) 0-5cm")
+coefplot(modT.minzd, varnames=longnames, intercept=FALSE, main="Minz. (inv-ref) 0-5cm")
 
 #fit model (5-15cm, B)
 modB.minzd<-lmer(Diff_minzd_B ~ 
@@ -137,7 +137,7 @@ modB.minzd<-lmer(Diff_minzd_B ~
                     mv_g.m2_logt + 
                     (1|year), data=data.q2.modif1_B)
 #summary(modB.minzd)
-coefplot2(modB.minzd, varnames=longnames, intercept=FALSE, main="Minz. (inv-ref) 5-15cm")
+coefplot(modB.minzd, varnames=longnames, intercept=FALSE, main="Minz. (inv-ref) 5-15cm")
 ```
 
 ```{r noi, echo=FALSE,fig.width=3.8, fig.height=3.8}
@@ -148,7 +148,7 @@ modT.noi<-lmer(Diff_noi_T ~
                     mv_g.m2_logt + 
                     (1|year), data=data.q2.modif1_T)
 #summary(modT.minzd)
-coefplot2(modT.noi, varnames=longnames, intercept=FALSE, main="NO3 (inv-ref) 0-5cm")
+coefplot(modT.noi, varnames=longnames, intercept=FALSE, main="NO3 (inv-ref) 0-5cm")
 
 #fit model (5-15cm, B)
 modB.noi<-lmer(Diff_noi_B ~ 
@@ -157,7 +157,7 @@ modB.noi<-lmer(Diff_noi_B ~
                     mv_g.m2_logt + 
                     (1|year), data=data.q2.modif1_B)
 #summary(modB.minzd)
-coefplot2(modB.noi, varnames=longnames, intercept=FALSE, main="NO3 (inv-ref) 5-15cm")
+coefplot(modB.noi, varnames=longnames, intercept=FALSE, main="NO3 (inv-ref) 5-15cm")
 ```
 
 ```{r ammonifd, echo=FALSE,fig.width=3.8, fig.height=3.8}
@@ -168,7 +168,7 @@ modT.ammonifd<-lmer(Diff_ammonifd_T ~
                     mv_g.m2_logt + 
                     (1|year), data=data.q2.modif1_T)
 #summary(modT.minzd)
-coefplot2(modT.ammonifd, varnames=longnames, intercept=FALSE, main="Ammonif. (inv-ref) 0-5cm")
+coefplot(modT.ammonifd, varnames=longnames, intercept=FALSE, main="Ammonif. (inv-ref) 0-5cm")
 
 #fit model (5-15cm, B)
 modB.ammonifd<-lmer(Diff_ammonifd_B ~ 
@@ -177,5 +177,5 @@ modB.ammonifd<-lmer(Diff_ammonifd_B ~
                     mv_g.m2_logt + 
                     (1|year), data=data.q2.modif1_B)
 #summary(modB.minzd)
-coefplot2(modB.ammonifd, varnames=longnames, intercept=FALSE, main="Ammonif. (inv-ref) 5-15cm")
+coefplot(modB.ammonifd, varnames=longnames, intercept=FALSE, main="Ammonif. (inv-ref) 5-15cm")
 ```
