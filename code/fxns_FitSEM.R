@@ -132,7 +132,7 @@ FitSEM.B.ammonif <- function(df){
   #define model
   modlist <- list(
     lme(mv.logt ~ BA_total + percpar12.logt, random=~1|year, data=df),
-    lme(impact ~ mv.logt + percpar12.logt + noi_B + nat_g.m2 + mv.logt:noi_B, 
+    lme(impact ~ nat_g.m2 + noi_B + BA_total + mv.logt + noi_B:mv.logt, 
         random= ~1|year, data=df)
   )
   
@@ -162,7 +162,7 @@ FitSEM.B.minz <- function(df){
   #define model
   modlist <- list(
     lme(mv.logt ~ BA_total + percpar12.logt, random=~1|year, data=df),
-    lme(impact ~ mv.logt + nat_g.m2 + noi_B + mv.logt:noi_B, 
+    lme(impact ~ nat_g.m2 + noi_B + mv.logt + noi_B:mv.logt, 
         random= ~1|year, data=df)
   )
   
@@ -183,4 +183,33 @@ FitSEM.B.minz <- function(df){
   
 }
 
+FitSEM.B.minz_addPath <- function(df){
+  
+  #evaluate multivariate normality
+  df.valsonly <- df[,!colnames(df) %in% c("plotid","year")]
+  mn <- mult.norm(df.valsonly, chicrit = 0.005) 
+  
+  #define model
+  modlist <- list(
+    lme(mv.logt ~ BA_total + percpar12.logt, random=~1|year, data=df),
+    lme(impact ~ nat_g.m2 + noi_B + mv.logt + BA_total + noi_B:mv.logt, 
+        random= ~1|year, data=df)
+  )
+  
+  #does the model fit the data?
+  sem_fit<-sem.fit(modelList=modlist, data=df, conditional = T) 
+  sem_fit
+  
+  #path coefs
+  coef_nonstd<-sem.coefs(modelList=modlist, data=df, standardize="none")
+  coef_std<-sem.coefs(modelList=modlist, data=df, standardize="scale")
+  coef_std
+  
+  #R2 values
+  r2<-sem.model.fits(modlist)
+  
+  result<-list(mn=mn, sem_fit=sem_fit, coef_nonstd=coef_nonstd, coef_std=coef_std, r2=r2)
+  return(result)
+  
+}
 

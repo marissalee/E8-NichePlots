@@ -32,7 +32,7 @@ source('code/fxns_FitSEM.R')
 data <- load_data()
 
 # beware that there is a different terminology for plot types in the manuscript and in the code
-# 18 sites each with 1 invaded and 1 reference plot (using manuscript terminology) ... this includes 2 sites w/o trees
+# 16 sites each with 1 invaded and 1 reference plot (using manuscript terminology) ... this excludes 2 sites w/o trees
 # hereafter in this code, site = plot and plot = plothalf
 length(unique(data$plotid))
 
@@ -50,6 +50,55 @@ data %>%
 # reason for why there *were* NAs ...
 # previously, samples with a below detection value for initial/final NH4/NO3, the mineralization rate was not calculated; cell is 'NA'
 # currently, mineralization rates were calculated with dummy value (0.0001) if an initial or final inorganic N concentration was below detection
+
+# -------------------------------------------------------------------#
+# Understory vegetation
+data %>%
+  filter(varType == "understoryBiom") %>%
+  select(year, plotid, inv, variable, value) %>%
+  spread(key = variable, value = value) -> tmp
+
+tmp %>%
+  group_by(inv) %>%
+  summarize(meanNat = mean(nat_g.m2),
+            seNat = sd(nat_g.m2)/sqrt(length(nat_g.m2)))
+
+tmp %>%
+  group_by(inv) %>%
+  summarize(meanTot = mean(total_g.m2),
+            seTot = sd(total_g.m2)/sqrt(length(total_g.m2)))
+unique(data$variable)
+
+data %>%
+  filter(variable %in% c("nat_g.m2","total_g.m2","minzd_B","ammonifd_B")) %>%
+  filter(inv == "N") %>%
+  select(year, plotid, variable, value) %>%
+  spread(key = variable, value = value) -> tmp
+
+data %>%
+  filter(variable %in% c("nat_g.m2","total_g.m2","minzd_B","ammonifd_B")) %>%
+  filter(inv == "I") %>%
+  select(year, plotid, variable, value) %>%
+  spread(key = variable, value = value) %>%
+  rename('nat_g.m2_I'='nat_g.m2',
+         'total_g.m2_I'='total_g.m2',
+         'minzd_B_I'='minzd_B',
+         'ammonifd_B_I'='ammonifd_B') -> tmpI
+
+tmp %>%
+  left_join(tmpI) %>%
+  mutate(diff_minzd_B = minzd_B_I - minzd_B) %>%
+  mutate(diff_total = total_g.m2_I - total_g.m2) -> tmp.both
+
+ggplot(tmp.both, aes(x = nat_g.m2, y = diff_minzd_B )) +
+  geom_point() +
+  facet_grid(~year)
+
+ggplot(tmp.both, aes(x = diff_total, y = diff_minzd_B, shape = factor(year))) +
+  geom_point()
+
+ggplot(tmp.both, aes(x = nat_g.m2, y = minzd_B, shape = factor(year))) +
+  geom_point()
 
 
 
@@ -102,18 +151,7 @@ an.df.signif
 
 mod.reduce.list <- list()
 new.mod.reduce.list <- list()
-
-#ammonifd_B
-result <- refvars_modelselection_keepMv(diffVar = "ammonifd_B", impact.df = impact.df)
-mod <- lmer(result$modelFormula, data = result$df)
-mod.reduce <- step(mod, reduce.random = FALSE, keep.effs = "mv.logt")
-mod.reduce.list[['ammonifd_B']] <- data.frame(term = row.names(mod.reduce$anova.table), mod.reduce$anova.table)
-mod.reduce.list[['ammonifd_B']]
-new.mod <- lmer(ammonifd_B_Diff ~ nat_g.m2 + noi_B + percpar12.logt + mv.logt +
-                  nat_g.m2:mv.logt + noi_B:mv.logt + percpar12.logt:mv.logt + (1|year), data = result$df)
-new.mod.reduce <- step(new.mod, reduce.random = FALSE, keep.effs = "mv.logt")
-new.mod.reduce.list[['ammonifd_B']]<- data.frame(term = row.names(new.mod.reduce$anova.table), new.mod.reduce$anova.table)
-new.mod.reduce.list[['ammonifd_B']]
+final.summary <- list()
 
 #nitrifd_T
 result <- refvars_modelselection_keepMv(diffVar = "nitrifd_T", impact.df = impact.df)
@@ -126,6 +164,9 @@ new.mod <- lmer(nitrifd_T_Diff ~ noi_T + soilmoi_T + mv.logt +
 new.mod.reduce <- step(new.mod, reduce.random = FALSE, keep.effs = "mv.logt")
 new.mod.reduce.list[['nitrifd_T']]<- data.frame(term = row.names(new.mod.reduce$anova.table), new.mod.reduce$anova.table)
 new.mod.reduce.list[['nitrifd_T']]
+new.new.mod <- lmer(nitrifd_T_Diff ~ noi_T + soilmoi_T + mv.logt + (1|year), data = result$df)
+final.summary[['nitrifd_T']] <- data.frame(terms = row.names(summary(new.new.mod)$coefficients), summary(new.new.mod)$coefficients)
+final.summary[['nitrifd_T']]
 
 #minzd_T
 result <- refvars_modelselection_keepMv(diffVar = "minzd_T", impact.df = impact.df)
@@ -138,34 +179,52 @@ new.mod <- lmer(minzd_T_Diff ~ noi_T + soilmoi_T + mv.logt +
 new.mod.reduce <- step(new.mod, reduce.random = FALSE, keep.effs = "mv.logt")
 new.mod.reduce.list[['minzd_T']] <- data.frame(term = row.names(new.mod.reduce$anova.table), new.mod.reduce$anova.table)
 new.mod.reduce.list[['minzd_T']]
+new.new.mod <- lmer(minzd_T_Diff ~ noi_T + soilmoi_T + mv.logt + (1|year), data = result$df)
+final.summary[['minzd_T']] <- data.frame(terms = row.names(summary(new.new.mod)$coefficients), summary(new.new.mod)$coefficients)
+final.summary[['minzd_T']]
+
+#ammonifd_B
+result <- refvars_modelselection_keepMv(diffVar = "ammonifd_B", impact.df = impact.df)
+mod <- lmer(result$modelFormula, data = result$df)
+mod.reduce <- step(mod, reduce.random = FALSE, keep.effs = "mv.logt")
+mod.reduce.list[['ammonifd_B']] <- data.frame(term = row.names(mod.reduce$anova.table), mod.reduce$anova.table)
+mod.reduce.list[['ammonifd_B']]
+new.mod <- lmer(ammonifd_B_Diff ~ nat_g.m2 + noi_B + BA_total + mv.logt +
+                  nat_g.m2:mv.logt + noi_B:mv.logt + BA_total:mv.logt + (1|year), data = result$df)
+new.mod.reduce <- step(new.mod, reduce.random = FALSE, keep.effs = "mv.logt")
+new.mod.reduce.list[['ammonifd_B']]<- data.frame(term = row.names(new.mod.reduce$anova.table), new.mod.reduce$anova.table)
+new.mod.reduce.list[['ammonifd_B']]
+new.new.mod <- lmer(ammonifd_B_Diff ~ nat_g.m2 + noi_B + BA_total + mv.logt + 
+                      noi_B:mv.logt + (1|year), data = result$df)
+final.summary[['ammonifd_B']] <- data.frame(terms = row.names(summary(new.new.mod)$coefficients), summary(new.new.mod)$coefficients)
+final.summary[['ammonifd_B']]
 
 #minzd_B
 result <- refvars_modelselection_keepMv(diffVar = "minzd_B", impact.df = impact.df)
 mod <- lmer(result$modelFormula, data = result$df)
 mod.reduce <- step(mod, reduce.random = FALSE, keep.effs = "mv.logt")
 mod.reduce.list[['minzd_B']] <- data.frame(term = row.names(mod.reduce$anova.table), mod.reduce$anova.table)
+mod.reduce.list[['minzd_B']] 
 new.mod <- lmer(minzd_B_Diff ~ nat_g.m2 + noi_B + mv.logt +
                   nat_g.m2:mv.logt + noi_B:mv.logt + (1|year), data = result$df)
 new.mod.reduce <- step(new.mod, reduce.random = FALSE, keep.effs = "mv.logt")
 new.mod.reduce.list[['minzd_B']] <- data.frame(term = row.names(new.mod.reduce$anova.table), new.mod.reduce$anova.table)
 new.mod.reduce.list[['minzd_B']]
+new.new.mod <- lmer(minzd_B_Diff ~ nat_g.m2 + noi_B + mv.logt +
+                      noi_B:mv.logt + (1|year), data = result$df)
+final.summary[['minzd_B']] <- data.frame(terms = row.names(summary(new.new.mod)$coefficients), summary(new.new.mod)$coefficients)
+final.summary[['minzd_B']]
 
 # export anova tables
 mod.reduce.df <- list_to_df(mod.reduce.list)
 write.csv(mod.reduce.df, file = paste0("output/", "anova_q2_modreduce.csv"))
 new.mod.reduce.df <- list_to_df(new.mod.reduce.list)
 write.csv(new.mod.reduce.df, file = paste0("output/", "anova_q2_FINALmodreduce.csv"))
+final.summary.df <- list_to_df(final.summary)
+write.csv(final.summary.df, file = paste0("output/", "summary_q2_FINALmod.csv"))
 
 ## make dfs for plots and export because ....
 ### warning: dplyr::select doesn't work after you load merTools package
-
-# minzd_T
-new.mod.reduce.df %>%
-  filter(source == "minzd_T")
-result <- refvars_modelselection_keepMv(diffVar = "minzd_T", impact.df = impact.df)
-mod <- lmer(minzd_T_Diff ~ noi_T + soilmoi_T + mv.logt + (1|year), data = result$df.notscaled)
-plot.list <- list(df = result$df.notscaled, mod = mod)
-saveRDS(plot.list, file = paste0("data_synth/","minzdT.RData"))
 
 # nitrifd_T
 new.mod.reduce.df %>%
@@ -175,21 +234,31 @@ mod <- lmer(nitrifd_T_Diff ~ noi_T + soilmoi_T + mv.logt + (1|year), data = resu
 plot.list <- list(df = result$df.notscaled, mod = mod)
 saveRDS(plot.list, file = paste0("data_synth/","nitrifdT.RData"))
 
-# minzd_B
+# minzd_T
 new.mod.reduce.df %>%
-  filter(source == "minzd_B")
-result <- refvars_modelselection_keepMv(diffVar = "minzd_B", impact.df = impact.df)
-mod <- lmer(minzd_B_Diff ~ nat_g.m2 + noi_B + mv.logt + noi_B:mv.logt + (1|year), data = result$df.notscaled)
+  filter(source == "minzd_T")
+result <- refvars_modelselection_keepMv(diffVar = "minzd_T", impact.df = impact.df)
+mod <- lmer(minzd_T_Diff ~ noi_T + soilmoi_T + mv.logt + (1|year), data = result$df.notscaled)
 plot.list <- list(df = result$df.notscaled, mod = mod)
-saveRDS(plot.list, file = paste0("data_synth/","minzdB.RData"))
+saveRDS(plot.list, file = paste0("data_synth/","minzdT.RData"))
 
 # ammonifd_B
 new.mod.reduce.df %>%
   filter(source == "ammonifd_B")
 result <- refvars_modelselection_keepMv(diffVar = "ammonifd_B", impact.df = impact.df)
-mod <- lmer(ammonifd_B_Diff ~ nat_g.m2 + noi_B + percpar12.logt + mv.logt + noi_B:mv.logt + (1|year), data = result$df.notscaled)
+mod <- lmer(ammonifd_B_Diff ~ nat_g.m2 + noi_B + BA_total + mv.logt + 
+              noi_B:mv.logt + (1|year), data = result$df.notscaled)
 plot.list <- list(df = result$df.notscaled, mod = mod)
 saveRDS(plot.list, file = paste0("data_synth/","ammonifdB.RData"))
+
+# minzd_B
+new.mod.reduce.df %>%
+  filter(source == "minzd_B")
+result <- refvars_modelselection_keepMv(diffVar = "minzd_B", impact.df = impact.df)
+mod <- lmer(minzd_B_Diff ~ nat_g.m2 + noi_B + BA_total + mv.logt +
+              noi_B:mv.logt + (1|year), data = result$df.notscaled)
+plot.list <- list(df = result$df.notscaled, mod = mod)
+saveRDS(plot.list, file = paste0("data_synth/","minzdB.RData"))
 
 # make plots using this script...
 # source('script_regPlots.R')
@@ -227,7 +296,7 @@ mod <- lmer(mv.logt ~ nhi + noi + soilmoi + som + ph +
               percpar12.logt + (1|year), data = tmp.s)
 mod.step <- step(mod, reduce.random = FALSE)
 an.df <- data.frame(row.names(mod.step$anova.table), mod.step$anova.table)
-
+an.df
 write.csv(an.df, file = paste0('output/','anova_q3.csv'))
 
 
@@ -237,38 +306,66 @@ mod <- lmer(mv.logt ~ BA_total + percpar12.logt + (1|year), data = tmp) #plot un
 plot.list <- list(df = tmp, mod = mod)
 saveRDS(plot.list, file = paste0("data_synth/","mv.RData"))
 
-# reference plot relationships relative to light availability
-p.ba <- ggplot(data = tmp, aes(x = BA_total, y = percpar12.logt)) +
+# reference plot relationships relative to tree BA
+p.ba <- ggplot(data = tmp, aes(y = percpar12.logt, x = BA_total)) +
   geom_point(alpha =.8) + mytheme +
-  ylab("Light avail. (log %)") + xlab("Tree basal area (m2)")
-p.ntrees <- ggplot(data = tmp, aes(x = nTrees, y = percpar12.logt)) +
+  xlab("Tree basal area (m2)") + ylab("Light avail. (log %)")
+p.nat <- ggplot(data = tmp, aes(y = nat_g.m2, x = BA_total, shape = factor(year))) +
+  geom_line(aes(group = plotid), color = "gray") +
   geom_point(alpha =.8) + mytheme +
-  ylab("Light avail. (log %)") + xlab("Number of trees")
-p.soilmoi <- ggplot(data = tmp, aes(x = soilmoi, y = percpar12.logt)) +
+  xlab("Tree basal area (m2)") + ylab("Understory biomass (g/m2)")
+p.nat2 <- ggplot(data = tmp, aes(y = nat_g.m2, x = percpar12.logt, shape = factor(year))) +
+  geom_line(aes(group = plotid), color = "gray") +
   geom_point(alpha =.8) + mytheme +
-  ylab("Light avail. (log %)") + xlab("Soil moisture (%)")
-p.nat <- ggplot(data = tmp, aes(x = nat_g.m2, y = percpar12.logt)) +
-  geom_point(alpha =.8) + mytheme +
-  ylab("Light avail. (log %)") + xlab("Understory biomass (g/m2)")
-p.litter <- ggplot(data = tmp, aes(x = litter_g.m2, y = percpar12.logt)) +
-  geom_point(alpha =.8) + mytheme +
-  ylab("Light avail. (log %)") + xlab("Litter biomass (g/m2)")
+  xlab("Light avail. (log %)") + ylab("Understory biomass (g/m2)")
 
-pdf(file = paste0('output/','light_refvars.pdf'), width = 6, height = 9)
+# p.ntrees <- ggplot(data = tmp, aes(x = nTrees, y = BA_total)) +
+#   geom_point(alpha =.8) + mytheme +
+#   ylab("Tree basal area (m2)") + xlab("Number of trees")
+# p.soilmoi <- ggplot(data = tmp, aes(x = soilmoi, y = BA_total, shape = factor(year))) +
+#   geom_line(aes(group = plotid), color = "gray") +
+#   geom_point(alpha =.8) + mytheme +
+#   ylab("Tree basal area (m2)") + xlab("Soil moisture (%)")
+# p.litter <- ggplot(data = tmp, aes(x = litter_g.m2, y = BA_total, shape = factor(year))) +
+#   geom_line(aes(group = plotid), color = "gray") +
+#   geom_point(alpha =.8) + mytheme +
+#   ylab("Tree basal area (m2)") + xlab("Litter biomass (g/m2)")
+
+mv1 <- ggplot(data = tmp, aes(x = BA_total, y = mv.logt, group = plotid)) +
+  geom_point() +
+  geom_line()
+
+mv2 <- ggplot(data = tmp, aes(x = percpar12.logt, y = mv.logt, group = plotid)) +
+  geom_point() +
+  geom_line()
+
+pdf(file = paste0('output/','treeBA_refvars.pdf'), width = 6, height = 6)
 grid.arrange( 
              p.ba + ggtitle("a"), 
-             p.ntrees + ggtitle("b"),
-             p.soilmoi + ggtitle("c"),
-             p.nat + ggtitle("d"), 
-             p.litter + ggtitle("e"), 
+             textGrob(""),
+             p.nat + ggtitle("b") + guides(shape = F),
+             p.nat2 + ggtitle("c") + guides(shape = F),
              ncol = 2)
 dev.off()
 
+tmp %>%
+  filter(year == 2012) -> tmp.12
+mod.a<- lm(percpar12.logt ~ BA_total, data = tmp.12)
+anova(mod.a)
+
+mod.b<- lmer(nat_g.m2 ~ BA_total + (1|year), data = tmp)
+summary(mod.b)
+
+mod.c<- lmer(nat_g.m2 ~ percpar12.logt + (1|year), data = tmp)
+anova(mod.c)
+
 # lack of relationship between invader biomass and native biomass
-p.nat <- ggplot(data = data.q3, aes(x = nat_g.m2, y = mv)) +
+p.nat <- ggplot(data = data.q3, aes(x = nat_g.m2, y = mv, shape = factor(year))) +
+  geom_line(aes(group = plotid), color = "gray") +
   geom_point(alpha =.8) + mytheme + 
   ylab("Invader biomass (g/m2)") + 
-  xlab("Understory biomass (g/m2)")
+  xlab("Understory biomass (g/m2)") + guides(shape = F)
+p.nat
 ggsave(p.nat, file = paste0('output/','invbiom_natbiom.pdf'), width = 3, height = 3)
 
 # -------------------------------------------------------------------#
@@ -279,9 +376,6 @@ resp.diff.vec <- c("nitrifd_T","minzd_T","ammonifd_B","minzd_B")
 
 # Use modSel variables
 #mod.mv <- lmer(mv.logt ~ BA_total + percpar12.logt + (1|year), data = tmp.s)
-new.mod.reduce.df %>%
-  filter(source == "minzd_B")
-
 envvars.list <- list()
 envvars.list[['nitrifd_T']] <- c("noi_T","soilmoi_T","percpar12","BA_total")
 envvars.list[['minzd_T']] <- c("noi_T","soilmoi_T","percpar12","BA_total")
@@ -318,3 +412,5 @@ sem.ammonifd_B
 sem.minzd_B <- FitSEM.B.minz(df = df.list[['minzd_B']])
 sem.minzd_B
 
+sem.minzd_B_addPath <- FitSEM.B.minz_addPath(df = df.list[['minzd_B']])
+sem.minzd_B_addPath

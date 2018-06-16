@@ -28,7 +28,7 @@ XYPlot_DF <- function(n, xVar, constantVar, df, mod){
     newDf.list[[i]] <- df.new
   }
   names(newDf.list) <- paste('group', select.year.vec, sep="_")
-
+  
   # predict y values, conditional on random effect levels
   predData.list.mean <- list()
   predData.list.mean[["group_2012"]] <- predict(object = mod, newdata = newDf.list[["group_2012"]])

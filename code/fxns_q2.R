@@ -33,64 +33,6 @@ make_impact.df <- function(data, diffVars){
 }
 
 ### use "backward" model selction for reference variables ###
-refvars_modelselection <- function(diffVar, impact.df){
-  
-  # identify reference data
-  allVars.levels <- allVars_levels()
-  refVars <- allVars.levels$allVars
-  diffVar.basic <- strsplit(diffVar, "_")[[1]][1]
-  depth <- strsplit(diffVar, "_")[[1]][2]
-  curr.refVars <- refVars[!grepl(diffVar.basic, refVars)]
-  keep.refVars.soil <- curr.refVars[grepl(paste0("_", depth), curr.refVars)]
-  curr.refVars <- c(keep.refVars.soil, refVars[17:21])
-  # get rid of minzd because it is highly correlated with ammonifd/nitrifd
-  curr.refVars<- curr.refVars[!grepl("minzd", curr.refVars)]
-  if(diffVar.basic == "minzd"){
-    # get rid of ammonifd/nitrifd because it is highly correlated with minzd
-    curr.refVars<- curr.refVars[!grepl("ammonifd", curr.refVars)]
-    curr.refVars<- curr.refVars[!grepl("nitrifd", curr.refVars)]
-  }
-  impact.df %>%
-    filter(variable %in% curr.refVars) %>%
-    spread(key = variable, value = value) %>%
-    select(-type) %>%
-    transform(percpar12.logt = log(percpar12)) -> df
-  
-  # scale the predictor variables
-  df.s <- scale(df[,!colnames(df) %in% c("plotid","year")])
-  df <- data.frame(plotid = df$plotid, year = df$year, df.s)
-  
-  # add response variable
-  impact.df %>%
-    filter(grepl(diffVar, variable) & type == "diff") %>%
-    spread(key = variable, value = value) %>%
-    select(-type) -> resp.df
-  df %>%
-    left_join(resp.df) %>%
-    transform(year = factor(year)) -> curr.df
-  
-  # create model formulas
-  refVars.str <- paste(colnames(df)[!colnames(df) %in% c('plotid','year')], collapse = " + ")
-  respVars.vec <- colnames(resp.df)[!colnames(resp.df) %in% c('plotid','year')]
-  modelFormula <- paste0(respVars.vec, " ~ ", refVars.str, " + (1|year)")
-  modelFormula0 <- paste0(respVars.vec, " ~ ", " + (1|year)")
-  .env <- environment() ## identify the environment
-  fo <- as.formula(modelFormula, env = .env)
-  
-  # run full model and do model selection
-  require(lmerTest)
-  mod <- lmer(modelFormula, data = curr.df)
-  mod0 <- lmer(modelFormula0, data = curr.df) 
-  an <- anova(mod, mod0)
-  an.df <- data.frame(model = c("1","full"), data.frame(an))
-  an.df %>%
-    rename('pval' = 'Pr..Chisq.') -> an.df
-  result <- list(an = an.df, df = curr.df, modelFormula = fo)
-  result
-  return(result)
-  
-}
-
 refvars_modelselection_keepMv <- function(diffVar, impact.df){
   
   # identify reference data
@@ -108,16 +50,15 @@ refvars_modelselection_keepMv <- function(diffVar, impact.df){
     curr.refVars<- curr.refVars[!grepl("ammonifd", curr.refVars)]
     curr.refVars<- curr.refVars[!grepl("nitrifd", curr.refVars)]
   }
+  # get rid of light avail because it can't directly influence soil N pools/fluxes
+  curr.refVars <- curr.refVars[curr.refVars != "percpar12"]
   impact.df %>%
     filter(variable %in% curr.refVars) %>%
     spread(key = variable, value = value) %>%
-    select(-type) %>%
-    mutate(percpar12.logt = log(percpar12)) %>%
-    select(-percpar12) -> refvars.df
+    select(-type) -> refvars.df
   colnames(refvars.df)
   
   # identify mv biomass
-  unique(impact.df$variable)
   impact.df %>%
     filter(variable == "mv_g.m2_logt") %>%
     select(year, plotid, value) %>%
@@ -161,7 +102,6 @@ refvars_modelselection_keepMv <- function(diffVar, impact.df){
   an.df <- data.frame(model = c("1","full"), data.frame(an))
   an.df %>%
     rename('pval' = 'Pr..Chisq.') -> an.df
-  
   result <- list(an = an.df, df = curr.df, modelFormula = fo, df.notscaled = curr.df.notscaled)
   return(result)
   
