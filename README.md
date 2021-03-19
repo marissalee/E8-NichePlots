@@ -4,7 +4,7 @@ Title: Site conditions are more important than abundance for explaining plant in
 
 Authors: Marissa R. Lee  S. Luke Flory  Richard P. Phillips  Justin P. Wright
 
-Source: Oecologia
+Source: Ecosphere
 
 Year: 2018
 
